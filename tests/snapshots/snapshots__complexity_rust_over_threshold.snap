@@ -1,0 +1,20 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: cognitive-complexity
+  severity: warning
+  message: "function `nested` has cognitive complexity 21 (threshold: 15)"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 0
+      end: 80
+    line_start: 1
+    col_start: 1
+    line_end: 3
+    col_end: 15
+  notes:
+    - score grows with nesting depth; flat code with the same number of branches scores much lower
+  helps:
+    - "extract helpers, return early, or invert conditions to reduce nesting"

@@ -1,0 +1,20 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: cognitive-complexity
+  severity: warning
+  message: "function `f` has cognitive complexity 29 (threshold: 15)"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 7
+      end: 87
+    line_start: 1
+    col_start: 8
+    line_end: 4
+    col_end: 3
+  notes:
+    - score grows with nesting depth; flat code with the same number of branches scores much lower
+  helps:
+    - "extract helpers, return early, or invert conditions to reduce nesting"

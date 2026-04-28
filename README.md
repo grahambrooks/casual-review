@@ -11,8 +11,8 @@ Early MVP. The pipeline runs end-to-end, but the rule set is small and the proje
 ## What works today
 
 - **Languages:** Rust, Python, TypeScript, TSX, Java (via tree-sitter).
-- **Rules** (13 total):
-  - **Universal:** `parse-error`, `todo-marker` (TODO/FIXME/XXX), `trailing-whitespace`, `large-function` (body > 40 lines), `debug-print` (`println!`/`dbg!`/`print()`/`console.log`/`System.out.println`/`printStackTrace` etc.), `empty-catch` (silent error swallowing), `disabled-test` (`#[ignore]`/`xit`/`it.skip`/`@pytest.mark.skip`/`@Disabled`/`@Ignore`), `hardcoded-secret` (AWS, GitHub, Slack, OpenAI, Google API keys; private key headers).
+- **Rules** (14 total):
+  - **Universal:** `parse-error`, `todo-marker` (TODO/FIXME/XXX), `trailing-whitespace`, `large-function` (body > 40 lines), `cognitive-complexity` (Sonar-style, threshold 15 — penalizes nesting), `debug-print` (`println!`/`dbg!`/`print()`/`console.log`/`System.out.println`/`printStackTrace` etc.), `empty-catch` (silent error swallowing), `disabled-test` (`#[ignore]`/`xit`/`it.skip`/`@pytest.mark.skip`/`@Disabled`/`@Ignore`), `hardcoded-secret` (AWS, GitHub, Slack, OpenAI, Google API keys; private key headers).
   - **Rust:** `unwrap-used` (`.unwrap()` / `.expect()`).
   - **TypeScript/TSX:** `any-type` (explicit `any`), `ts-escape-hatch` (`@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`/non-null assertions).
   - **Python:** `bare-except` (`except:` without a type).

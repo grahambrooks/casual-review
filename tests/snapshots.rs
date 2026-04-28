@@ -273,6 +273,106 @@ fn java_print_stack_trace() {
 }
 
 #[test]
+fn complexity_rust_under_threshold() {
+    let diagnostics = run_on(
+        "fn flat(a: bool, b: bool, c: bool) -> i32 {\n\
+         \tif a { return 1; }\n\
+         \tif b { return 2; }\n\
+         \tif c { return 3; }\n\
+         \t0\n\
+         }\n",
+        "x.rs",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn complexity_rust_over_threshold() {
+    let mut src = String::from("fn nested(a: bool, b: bool, c: bool, d: bool) -> i32 {\n");
+    for depth in 0..6 {
+        src.push_str(&"    ".repeat(depth + 1));
+        src.push_str("if a {\n");
+    }
+    for depth in (0..6).rev() {
+        src.push_str(&"    ".repeat(depth + 1));
+        src.push_str("}\n");
+    }
+    src.push_str("    0\n}\n");
+    let diagnostics = run_on(&src, "x.rs");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn complexity_python_nested() {
+    let src = "def f(a, b, c):\n    \
+        if a:\n        \
+            if b:\n            \
+                while c:\n                \
+                    if a and b and c:\n                    \
+                        return 1\n    \
+        return 0\n";
+    let diagnostics = run_on(src, "x.py");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn complexity_typescript_with_ternary() {
+    let src = "export function f(a: boolean, b: boolean, c: boolean): number {\n\
+        \tif (a) {\n\
+        \t\tif (b) {\n\
+        \t\t\twhile (c) {\n\
+        \t\t\t\tif (a && b && c) {\n\
+        \t\t\t\t\treturn (a ? (b ? 1 : 2) : (c ? 3 : 4));\n\
+        \t\t\t\t}\n\
+        \t\t\t}\n\
+        \t\t}\n\
+        \t}\n\
+        \treturn 0;\n\
+        }\n";
+    let diagnostics = run_on(src, "x.ts");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn complexity_java_switch_and_catch() {
+    let src = "public class C {\n\
+        \tpublic int f(int x, int y) {\n\
+        \t\ttry {\n\
+        \t\t\tswitch (x) {\n\
+        \t\t\t\tcase 1:\n\
+        \t\t\t\t\tif (y > 0) {\n\
+        \t\t\t\t\t\twhile (y > 0) {\n\
+        \t\t\t\t\t\t\tif (x == 1 && y == 2) return 1;\n\
+        \t\t\t\t\t\t\ty--;\n\
+        \t\t\t\t\t\t}\n\
+        \t\t\t\t\t}\n\
+        \t\t\t\t\tbreak;\n\
+        \t\t\t\tdefault:\n\
+        \t\t\t\t\tbreak;\n\
+        \t\t\t}\n\
+        \t\t} catch (Exception e) {\n\
+        \t\t\treturn -1;\n\
+        \t\t}\n\
+        \t\treturn 0;\n\
+        \t}\n\
+        }\n";
+    let diagnostics = run_on(src, "C.java");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn complexity_skips_nested_function_body() {
+    let src = "fn outer() -> i32 {\n\
+        \tlet inner = || {\n\
+        \t\tif true { if true { if true { 1 } else { 2 } } else { 3 } } else { 4 }\n\
+        \t};\n\
+        \tinner()\n\
+        }\n";
+    let diagnostics = run_on(src, "x.rs");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
 fn rust_large_function() {
     let mut body = String::from("fn big() {\n");
     for i in 0..50 {
