@@ -28,8 +28,10 @@ clap = { version = "4", features = ["derive"] }
 # Diagnostic rendering
 ariadne = "0.4"
 
-# Git plumbing (diff resolution, blob fetch)
-git2 = { version = "0.19", default-features = false }
+# Git plumbing (diff resolution, blob fetch).
+# 0.20+ required: 0.19's libgit2-sys 0.17 fails to link advapi32 on Windows
+# (missing CryptGenRandom, OpenProcessToken, Reg* symbols).
+git2 = { version = "0.20", default-features = false }
 
 # tree-sitter core + per-language grammars
 tree-sitter = "0.22"
