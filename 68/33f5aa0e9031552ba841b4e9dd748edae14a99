@@ -1,0 +1,64 @@
+src/rules/bare_except.rs
+  d9c6d37f255e2a11 15-25
+src/rules/todo_marker.rs
+  d9c6d37f255e2a11 17-25
+src/rules/debug_print.rs
+  d9c6d37f255e2a11 28-41
+src/rules/assertion_free_test.rs
+  d9c6d37f255e2a11 13-27
+src/rules/hardcoded_secret.rs
+  d9c6d37f255e2a11 48-64
+src/rules/parse_error.rs
+  d9c6d37f255e2a11 11-19
+src/rules/large_function.rs
+  d9c6d37f255e2a11 28-38
+CLAUDE.md
+  d9c6d37f255e2a11 1-47
+src/rules/any_type.rs
+  d9c6d37f255e2a11 15-31
+AGENTS.md
+  d9c6d37f255e2a11 1-161
+src/rules/empty_catch.rs
+  d9c6d37f255e2a11 19-29
+README.md
+  d9c6d37f255e2a11 75-82
+src/rules/ts_escape_hatch.rs
+  d9c6d37f255e2a11 39-54
+src/rules/disabled_test.rs
+  d9c6d37f255e2a11 27-39
+src/rules/api_surface_change.rs
+  d9c6d37f255e2a11 21-35
+src/cli.rs
+  d9c6d37f255e2a11 15-22
+src/rules/trailing_whitespace.rs
+  d9c6d37f255e2a11 11-16
+src/main.rs
+  d9c6d37f255e2a11 2,7,27-55
+src/rules/mod.rs
+  d9c6d37f255e2a11 55-59
+src/rules/complexity.rs
+  d9c6d37f255e2a11 16-31
+src/rules/unwrap_used.rs
+  d9c6d37f255e2a11 20-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "6833f5aa0e9031552ba841b4e9dd748edae14a99",
+  "prompts": {
+    "d9c6d37f255e2a11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47c88849-1fc7-4952-b5b2-5d36253ec775",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 471,
+      "total_deletions": 20,
+      "accepted_lines": 488,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/9163a0913f0f6dc95e43ad41a98ca617b448b55e5b07bf7cab4f2d230f5fefe4"
+    }
+  }
+}
