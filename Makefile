@@ -110,60 +110,70 @@ verify-release: lint test ## Pre-release verification (lint + test)
 		exit 1; \
 	fi
 
-# `make release VERSION=2026.5.0`
+# Two release flows:
 #
-# Flow:
-#   1. Validate VERSION format and that working tree is clean.
-#   2. Run lint + test against the current source.
-#   3. Rewrite Cargo.toml's version line.
-#   4. Re-run cargo build to refresh Cargo.lock.
-#   5. Re-run tests against the bumped version.
-#   6. Commit Cargo.toml and create the v$(VERSION) tag locally.
-#   7. Print the next step (push) — does NOT push automatically.
+#   make release                          — tag whatever's in Cargo.toml right now.
+#                                           Assumes the version is committed and
+#                                           ready to ship. Useful when you've
+#                                           already bumped, or for the first
+#                                           release of an existing version.
+#
+#   make release VERSION=2026.5.0         — bump Cargo.toml to VERSION, commit,
+#                                           and tag in one step.
+#
+# Both gate on a clean working tree, an unused tag, and passing lint + test.
+# Neither pushes — the next-step push is printed.
 .PHONY: release
-release: ## Bump version, run checks, commit + tag locally. Usage: make release VERSION=YYYY.M.PATCH
-	@if [ -z "$(VERSION)" ]; then \
-		echo "usage: make release VERSION=YYYY.M.PATCH"; \
-		echo "current: $(CURRENT)"; \
-		exit 1; \
-	fi
-	@if ! echo "$(VERSION)" | grep -qE '^[0-9]{4}\.[0-9]+\.[0-9]+$$'; then \
-		echo "error: VERSION must match YYYY.M.PATCH (got: $(VERSION))"; \
-		exit 1; \
-	fi
-	@if [ "$(VERSION)" = "$(CURRENT)" ]; then \
-		echo "error: VERSION ($(VERSION)) matches current Cargo.toml version"; \
-		exit 1; \
-	fi
-	@if [ -n "$$(git status --porcelain)" ]; then \
+release: ## Tag current version, or bump+tag with VERSION=YYYY.M.PATCH
+	@target_version="$(VERSION)"; \
+	if [ -z "$$target_version" ]; then \
+		target_version="$(CURRENT)"; \
+		mode="tag-only"; \
+	else \
+		mode="bump-and-tag"; \
+		if ! echo "$$target_version" | grep -qE '^[0-9]{4}\.[0-9]+\.[0-9]+$$'; then \
+			echo "error: VERSION must match YYYY.M.PATCH (got: $$target_version)"; \
+			exit 1; \
+		fi; \
+		if [ "$$target_version" = "$(CURRENT)" ]; then \
+			echo "error: VERSION ($$target_version) matches current Cargo.toml."; \
+			echo "       Drop VERSION=... to tag the current version instead."; \
+			exit 1; \
+		fi; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
 		echo "error: working tree is dirty; commit or stash first"; \
 		git status -s; \
 		exit 1; \
-	fi
-	@if git rev-parse --verify --quiet "v$(VERSION)" >/dev/null; then \
-		echo "error: tag v$(VERSION) already exists"; \
+	fi; \
+	if git rev-parse --verify --quiet "v$$target_version" >/dev/null; then \
+		echo "error: tag v$$target_version already exists"; \
 		exit 1; \
-	fi
-	@echo "==> pre-flight: lint + test"
-	@$(MAKE) --no-print-directory lint
-	@$(MAKE) --no-print-directory test
-	@echo "==> bumping Cargo.toml: $(CURRENT) -> $(VERSION)"
-	@python3 -c "import re; \
-		c = open('Cargo.toml').read(); \
-		c = re.sub(r'^version = \"[^\"]+\"', 'version = \"$(VERSION)\"', c, count=1, flags=re.M); \
-		open('Cargo.toml','w').write(c)"
-	@echo "==> verifying bumped build"
-	@$(CARGO) build --release --quiet
-	@$(CARGO) test --quiet
-	@echo "==> committing and tagging"
-	@git add Cargo.toml
-	@git commit -m "Release v$(VERSION)"
-	@git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
-	@echo
-	@echo "Tagged v$(VERSION) locally. Push to trigger the release workflow:"
-	@echo "    git push origin main --follow-tags"
-	@echo
-	@echo "After push, the release workflow will:"
-	@echo "    - build binaries for 5 platforms"
-	@echo "    - upload to GitHub Releases"
-	@echo "    - update Formula/casual-review.rb on main"
+	fi; \
+	echo "==> mode: $$mode (target: v$$target_version)"; \
+	echo "==> pre-flight: lint + test"; \
+	$(MAKE) --no-print-directory lint; \
+	$(MAKE) --no-print-directory test; \
+	if [ "$$mode" = "bump-and-tag" ]; then \
+		echo "==> bumping Cargo.toml: $(CURRENT) -> $$target_version"; \
+		python3 -c "import re; \
+			c = open('Cargo.toml').read(); \
+			c = re.sub(r'^version = \"[^\"]+\"', 'version = \"'\"$$target_version\"'\"', c, count=1, flags=re.M); \
+			open('Cargo.toml','w').write(c)"; \
+		echo "==> verifying bumped build"; \
+		$(CARGO) build --release --quiet; \
+		$(CARGO) test --quiet; \
+		echo "==> committing"; \
+		git add Cargo.toml; \
+		git commit -m "Release v$$target_version"; \
+	fi; \
+	echo "==> tagging v$$target_version"; \
+	git tag -a "v$$target_version" -m "Release v$$target_version"; \
+	echo; \
+	echo "Tagged v$$target_version locally. Push to trigger the release workflow:"; \
+	echo "    git push origin main --follow-tags"; \
+	echo; \
+	echo "After push, the release workflow will:"; \
+	echo "    - build binaries for 5 platforms"; \
+	echo "    - upload to GitHub Releases"; \
+	echo "    - update Formula/casual-review.rb on main"
