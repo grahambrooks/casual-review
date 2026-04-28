@@ -1,0 +1,32 @@
+README.md
+  d9c6d37f255e2a11 41-42
+Formula/casual-review.rb
+  d9c6d37f255e2a11 4,9-10,13,19-20,23-24
+.gitignore
+  d9c6d37f255e2a11 6
+scripts/render-formula.py
+  d9c6d37f255e2a11 4,6-8,28,55,63-64
+.github/workflows/release.yml
+  d9c6d37f255e2a11 63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "ddd3e092aedbcd5e4b86148a8dfee00b175c1995",
+  "prompts": {
+    "d9c6d37f255e2a11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47c88849-1fc7-4952-b5b2-5d36253ec775",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 30,
+      "total_deletions": 29,
+      "accepted_lines": 57,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/6226684566490e516b01b1f0e8d956a15da3293fe2ec661fff5bd6891fe173c8"
+    }
+  }
+}
