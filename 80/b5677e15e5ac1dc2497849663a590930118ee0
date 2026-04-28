@@ -1,0 +1,126 @@
+fixtures/eval_python.py
+  d9c6d37f255e2a11 1-22
+README.md
+  d9c6d37f255e2a11 13-43
+fixtures/sample.ts
+  d9c6d37f255e2a11 1-9
+src/git/diff.rs
+  d9c6d37f255e2a11 27-96
+PLAN.md
+  d9c6d37f255e2a11 1-494
+fixtures/eval_java.java
+  d9c6d37f255e2a11 1-88
+src/git/mod.rs
+  d9c6d37f255e2a11 1-3
+src/rules/todo_marker.rs
+  d9c6d37f255e2a11 9-23
+fixtures/eval_disabled_test.py
+  d9c6d37f255e2a11 1-15
+fixtures/eval_empty_catch.ts
+  d9c6d37f255e2a11 1-13
+benches/throughput.rs
+  d9c6d37f255e2a11 1-88
+src/engine.rs
+  d9c6d37f255e2a11 5-150
+src/rules/mod.rs
+  d9c6d37f255e2a11 1-61
+src/cli.rs
+  d9c6d37f255e2a11 19-38
+context.md
+  d9c6d37f255e2a11 1-255
+src/rules/hardcoded_secret.rs
+  d9c6d37f255e2a11 1-73
+src/rules/bare_except.rs
+  d9c6d37f255e2a11 1-79
+src/diagnostic/suggestion.rs
+  d9c6d37f255e2a11 1-24
+src/render/json.rs
+  d9c6d37f255e2a11 1-10
+src/rules/trailing_whitespace.rs
+  d9c6d37f255e2a11 1-51
+src/rules/unwrap_used.rs
+  d9c6d37f255e2a11 30-53
+Cargo.toml
+  d9c6d37f255e2a11 27-30
+src/rules/large_function.rs
+  d9c6d37f255e2a11 18-36
+src/diagnostic/severity.rs
+  d9c6d37f255e2a11 1-21
+src/rules/parse_error.rs
+  d9c6d37f255e2a11 1-57
+fixtures/eval_empty_catch.py
+  d9c6d37f255e2a11 1-12
+src/rules/any_type.rs
+  d9c6d37f255e2a11 1-58
+src/diagnostic/span.rs
+  d9c6d37f255e2a11 1-40
+src/parse/mod.rs
+  d9c6d37f255e2a11 12-61
+src/main.rs
+  d9c6d37f255e2a11 4-120
+src/render/human.rs
+  d9c6d37f255e2a11 1-118
+src/rules/ts_escape_hatch.rs
+  d9c6d37f255e2a11 1-98
+fixtures/eval_secrets.py
+  d9c6d37f255e2a11 1-10
+fixtures/eval_rust.rs
+  d9c6d37f255e2a11 1-65
+src/diagnostic/mod.rs
+  d9c6d37f255e2a11 1-56
+src/lib.rs
+  d9c6d37f255e2a11 1-7
+fixtures/eval_typescript.ts
+  d9c6d37f255e2a11 1-15
+tests/snapshots.rs
+  d9c6d37f255e2a11 114-286
+fixtures/eval_escape_hatch.ts
+  d9c6d37f255e2a11 1-9
+src/rules/disabled_test.rs
+  d9c6d37f255e2a11 1-187
+fixtures/sample.tsx
+  d9c6d37f255e2a11 1-11
+fixtures/sample.py
+  d9c6d37f255e2a11 1-10
+src/rules/api_surface_change.rs
+  d9c6d37f255e2a11 1-248
+src/render/mod.rs
+  d9c6d37f255e2a11 1-24
+fixtures/eval_disabled_test.rs
+  d9c6d37f255e2a11 1-16
+fixtures/eval_disabled_test.ts
+  d9c6d37f255e2a11 1-11
+src/rules/empty_catch.rs
+  d9c6d37f255e2a11 1-155
+src/rules/debug_print.rs
+  d9c6d37f255e2a11 16-117
+.gitignore
+  d9c6d37f255e2a11 4-5
+tests/api_surface.rs
+  d9c6d37f255e2a11 1-119
+fixtures/eval_empty_catch.rs
+  d9c6d37f255e2a11 1-8
+fixtures/sample.rs
+  d9c6d37f255e2a11 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "80b5677e15e5ac1dc2497849663a590930118ee0",
+  "prompts": {
+    "d9c6d37f255e2a11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47c88849-1fc7-4952-b5b2-5d36253ec775",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 3118,
+      "total_deletions": 56,
+      "accepted_lines": 3061,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/1f6862103378cb229b9807f6fac3fb2fad52d59f910bced8fd96445033747461"
+    }
+  }
+}
