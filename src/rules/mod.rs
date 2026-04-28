@@ -42,7 +42,9 @@ impl<'a> RuleCtx<'a> {
     pub fn line_in_changes(&self, line_1based: u32) -> bool {
         match self.changed_lines {
             None => true,
-            Some(ranges) => ranges.iter().any(|r| line_1based >= r.start && line_1based < r.end),
+            Some(ranges) => ranges
+                .iter()
+                .any(|r| line_1based >= r.start && line_1based < r.end),
         }
     }
 }

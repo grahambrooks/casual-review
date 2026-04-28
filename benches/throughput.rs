@@ -73,6 +73,8 @@ fn bench_rules_only(c: &mut Criterion) {
                 tree: Some(&tree),
                 language: Some(Language::Rust),
                 changed_lines: None,
+                old_source: None,
+                old_tree: None,
             };
             let mut total = Vec::new();
             for rule in &rules {
@@ -84,5 +86,10 @@ fn bench_rules_only(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_full_pipeline, bench_parse_only, bench_rules_only);
+criterion_group!(
+    benches,
+    bench_full_pipeline,
+    bench_parse_only,
+    bench_rules_only
+);
 criterion_main!(benches);

@@ -33,12 +33,7 @@ struct WalkState<'a> {
     source: &'a [u8],
 }
 
-fn find_and_analyze(
-    node: &Node<'_>,
-    state: &WalkState,
-    ctx: &RuleCtx,
-    out: &mut Vec<Diagnostic>,
-) {
+fn find_and_analyze(node: &Node<'_>, state: &WalkState, ctx: &RuleCtx, out: &mut Vec<Diagnostic>) {
     if is_function_like(state.language, node.kind()) {
         let (score, name) = analyze_function(node, state);
         if score > THRESHOLD {
@@ -146,14 +141,10 @@ fn classify(lang: Language, node: &Node<'_>, source: &[u8]) -> Contribution {
             _ => Contribution::None,
         },
         Language::TypeScript | Language::Tsx => match kind {
-            "if_statement"
-            | "for_statement"
-            | "for_in_statement"
-            | "for_of_statement"
-            | "while_statement"
-            | "do_statement"
-            | "switch_statement"
-            | "ternary_expression" => Contribution::NestingIncrement,
+            "if_statement" | "for_statement" | "for_in_statement" | "for_of_statement"
+            | "while_statement" | "do_statement" | "switch_statement" | "ternary_expression" => {
+                Contribution::NestingIncrement
+            }
             "catch_clause" => Contribution::NestingIncrement,
             "binary_expression" if is_short_circuit(node, source) => Contribution::LinearBreak,
             _ => Contribution::None,
@@ -191,10 +182,7 @@ fn is_function_like(lang: Language, kind: &str) -> bool {
         Language::Python => matches!(kind, "function_definition" | "lambda"),
         Language::TypeScript | Language::Tsx => matches!(
             kind,
-            "function_declaration"
-                | "function_expression"
-                | "arrow_function"
-                | "method_definition"
+            "function_declaration" | "function_expression" | "arrow_function" | "method_definition"
         ),
         Language::Java => matches!(
             kind,

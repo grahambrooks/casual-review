@@ -36,7 +36,11 @@ pub fn run_diff(repo_root: &Path, spec: DiffSpec, all: bool) -> anyhow::Result<E
         .into_iter()
         .filter_map(|c: ChangedFile| {
             let content = c.new_content?;
-            let changed_lines = if all { None } else { Some(c.changed_line_ranges) };
+            let changed_lines = if all {
+                None
+            } else {
+                Some(c.changed_line_ranges)
+            };
             Some(FileInput {
                 path: c.path,
                 content,

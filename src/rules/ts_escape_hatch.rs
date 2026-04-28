@@ -17,7 +17,10 @@ const TS_QUERY: &str = r#"
 "#;
 
 const COMMENT_DIRECTIVES: &[(&str, &str)] = &[
-    ("@ts-ignore", "`@ts-ignore` suppresses the next-line type error"),
+    (
+        "@ts-ignore",
+        "`@ts-ignore` suppresses the next-line type error",
+    ),
     (
         "@ts-nocheck",
         "`@ts-nocheck` disables type checking for the whole file",
@@ -72,7 +75,9 @@ impl Rule for TsEscapeHatchRule {
                                     msg.to_string(),
                                     span,
                                 )
-                                .with_help("address the underlying type error or narrow the assertion"),
+                                .with_help(
+                                    "address the underlying type error or narrow the assertion",
+                                ),
                             );
                             break;
                         }

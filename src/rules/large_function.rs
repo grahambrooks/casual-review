@@ -70,7 +70,9 @@ impl Rule for LargeFunctionRule {
                         ),
                         span,
                     )
-                    .with_help("consider extracting helpers; long functions are harder to test and review"),
+                    .with_help(
+                        "consider extracting helpers; long functions are harder to test and review",
+                    ),
                 );
             }
         }

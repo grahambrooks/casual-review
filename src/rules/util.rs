@@ -11,10 +11,7 @@ pub fn find_capture<'tree>(
     name: &str,
 ) -> Option<Node<'tree>> {
     let idx = query.capture_index_for_name(name)?;
-    captures
-        .iter()
-        .find(|c| c.index == idx)
-        .map(|c| c.node)
+    captures.iter().find(|c| c.index == idx).map(|c| c.node)
 }
 
 /// First direct child whose kind matches `kind`. Materializes the result

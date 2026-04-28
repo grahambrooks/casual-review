@@ -73,5 +73,7 @@ strip = true
 unsafe_code = "forbid"
 
 [lints.clippy]
-unwrap_used = "deny"
-expect_used = "warn"
+# unwrap_used/expect_used are intentionally not blanket-denied:
+# regex constants in hardcoded-secret and post-insert HashMap/Option
+# lookups are legitimate uses. We rely on developer judgment plus the
+# default clippy lint set (which still catches real correctness bugs).

@@ -9,7 +9,9 @@ impl Rule for ParseErrorRule {
     }
 
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
-        let Some(tree) = ctx.tree else { return Vec::new() };
+        let Some(tree) = ctx.tree else {
+            return Vec::new();
+        };
         let mut diagnostics = Vec::new();
         let mut cursor = tree.walk();
         let root = tree.root_node();

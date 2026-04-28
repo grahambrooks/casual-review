@@ -26,8 +26,7 @@ impl Rule for AssertionFreeTestRule {
             let span = Span::from_byte_range(
                 ctx.path.to_path_buf(),
                 ctx.source,
-                test.outer.start_byte()
-                    ..test.outer.end_byte().min(test.outer.start_byte() + 80),
+                test.outer.start_byte()..test.outer.end_byte().min(test.outer.start_byte() + 80),
             );
             if !ctx.line_in_changes(span.line_start) {
                 continue;
@@ -186,10 +185,12 @@ fn ts_test_call<'tree>(call: &Node<'tree>, source: &[u8]) -> Option<TestFn<'tree
         return None;
     }
 
-    let test_name = named_args[0]
-        .utf8_text(source)
-        .ok()
-        .map(|s| s.trim_matches('"').trim_matches('\'').trim_matches('`').to_string());
+    let test_name = named_args[0].utf8_text(source).ok().map(|s| {
+        s.trim_matches('"')
+            .trim_matches('\'')
+            .trim_matches('`')
+            .to_string()
+    });
 
     let callback = named_args.remove(1);
     if !matches!(callback.kind(), "arrow_function" | "function_expression") {

@@ -22,9 +22,7 @@ impl Rule for TrailingWhitespaceRule {
 
             let line_end = i;
             let mut trailing_start = line_end;
-            while trailing_start > line_start
-                && matches!(bytes[trailing_start - 1], b' ' | b'\t')
-            {
+            while trailing_start > line_start && matches!(bytes[trailing_start - 1], b' ' | b'\t') {
                 trailing_start -= 1;
             }
 

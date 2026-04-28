@@ -2,7 +2,7 @@ use crate::diagnostic::{Diagnostic, Severity};
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use std::collections::HashMap;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn render(
     diagnostics: &[Diagnostic],
@@ -61,7 +61,7 @@ fn render_one(
     Ok(())
 }
 
-fn path_id(p: &PathBuf) -> String {
+fn path_id(p: &Path) -> String {
     p.display().to_string()
 }
 
@@ -91,25 +91,20 @@ impl<'a> SourceCache<'a> {
 impl<'a> ariadne::Cache<String> for SourceCache<'a> {
     type Storage = String;
 
-    fn fetch(
-        &mut self,
-        id: &String,
-    ) -> Result<&Source<String>, Box<dyn std::fmt::Debug + '_>> {
+    fn fetch(&mut self, id: &String) -> Result<&Source<String>, Box<dyn std::fmt::Debug + '_>> {
         if !self.cache.contains_key(id) {
             let path = PathBuf::from(id);
             let text = match self.sources.get(&path).cloned() {
                 Some(t) => t,
                 None => {
-                    return Err(Box::new(format!("missing source for {id}"))
-                        as Box<dyn std::fmt::Debug>);
+                    return Err(
+                        Box::new(format!("missing source for {id}")) as Box<dyn std::fmt::Debug>
+                    );
                 }
             };
             self.cache.insert(id.clone(), Source::from(text));
         }
-        Ok(self
-            .cache
-            .get(id)
-            .expect("inserted above when missing"))
+        Ok(self.cache.get(id).expect("inserted above when missing"))
     }
 
     fn display<'b>(&self, id: &'b String) -> Option<Box<dyn std::fmt::Display + 'b>> {

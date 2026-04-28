@@ -39,9 +39,7 @@ impl Rule for EmptyCatchRule {
                 let report = match language {
                     Language::Rust => empty_rust_err_arm(&cap.node, source_bytes),
                     Language::Python => empty_python_except(&cap.node, source_bytes),
-                    Language::TypeScript | Language::Tsx => {
-                        empty_ts_catch(&cap.node, source_bytes)
-                    }
+                    Language::TypeScript | Language::Tsx => empty_ts_catch(&cap.node, source_bytes),
                     Language::Java => empty_java_catch(&cap.node, source_bytes),
                 };
                 let Some(label) = report else { continue };
@@ -55,8 +53,9 @@ impl Rule for EmptyCatchRule {
                     continue;
                 }
                 diagnostics.push(
-                    Diagnostic::new("empty-catch", Severity::Warning, label, span)
-                        .with_help("either handle the error, log it, or comment why it's safe to ignore"),
+                    Diagnostic::new("empty-catch", Severity::Warning, label, span).with_help(
+                        "either handle the error, log it, or comment why it's safe to ignore",
+                    ),
                 );
             }
         }
@@ -75,7 +74,7 @@ fn empty_rust_err_arm(arm: &Node<'_>, source: &[u8]) -> Option<String> {
     if !is_empty_block(&value, source) {
         return None;
     }
-    Some(format!("empty `Err` arm swallows the error"))
+    Some("empty `Err` arm swallows the error".to_string())
 }
 
 fn empty_python_except(clause: &Node<'_>, source: &[u8]) -> Option<String> {
@@ -107,7 +106,6 @@ fn empty_java_catch(clause: &Node<'_>, source: &[u8]) -> Option<String> {
     }
     Some("empty `catch` block silently swallows the exception".to_string())
 }
-
 
 fn python_block_is_pass_only(block: &Node<'_>, source: &[u8]) -> bool {
     let mut walker = block.walk();

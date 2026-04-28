@@ -73,8 +73,10 @@ fn find_marker(comment: &str) -> Option<(&'static str, usize)> {
             } else {
                 comment.as_bytes().get(idx - 1).copied()
             };
-            let word_boundary_before = before.map_or(true, |b| !b.is_ascii_alphanumeric() && b != b'_');
-            let word_boundary_after = after.map_or(true, |b| !b.is_ascii_alphanumeric() && b != b'_');
+            let word_boundary_before =
+                before.map_or(true, |b| !b.is_ascii_alphanumeric() && b != b'_');
+            let word_boundary_after =
+                after.map_or(true, |b| !b.is_ascii_alphanumeric() && b != b'_');
             if word_boundary_before && word_boundary_after {
                 return Some((marker, idx));
             }

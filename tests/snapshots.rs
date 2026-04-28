@@ -49,7 +49,10 @@ fn rust_parse_error() {
 
 #[test]
 fn python_todo_marker() {
-    let diagnostics = run_on("# TODO finish this\ndef add(a, b):\n    return a + b\n", "x.py");
+    let diagnostics = run_on(
+        "# TODO finish this\ndef add(a, b):\n    return a + b\n",
+        "x.py",
+    );
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
@@ -94,19 +97,13 @@ fn typescript_trailing_whitespace() {
 
 #[test]
 fn tsx_parse_error() {
-    let diagnostics = run_on(
-        "export const Bad = () => <div>unclosed;\n",
-        "x.tsx",
-    );
+    let diagnostics = run_on("export const Bad = () => <div>unclosed;\n", "x.tsx");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
 #[test]
 fn fixme_and_xxx_markers() {
-    let diagnostics = run_on(
-        "// FIXME bug here\n// XXX also here\nfn f() {}\n",
-        "x.rs",
-    );
+    let diagnostics = run_on("// FIXME bug here\n// XXX also here\nfn f() {}\n", "x.rs");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
@@ -148,10 +145,7 @@ fn python_debug_calls() {
 
 #[test]
 fn typescript_any_type() {
-    let diagnostics = run_on(
-        "export function f(x: any): any { return x; }\n",
-        "x.ts",
-    );
+    let diagnostics = run_on("export function f(x: any): any { return x; }\n", "x.ts");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
@@ -193,10 +187,7 @@ fn typescript_empty_catch() {
 
 #[test]
 fn rust_disabled_test_ignore() {
-    let diagnostics = run_on(
-        "#[ignore]\n#[test]\nfn t() { assert_eq!(1, 2); }\n",
-        "x.rs",
-    );
+    let diagnostics = run_on("#[ignore]\n#[test]\nfn t() { assert_eq!(1, 2); }\n", "x.rs");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
@@ -383,10 +374,7 @@ fn assertion_free_rust_test_no_assert() {
 
 #[test]
 fn assertion_free_rust_test_with_assert() {
-    let diagnostics = run_on(
-        "#[test]\nfn t() {\n    assert_eq!(1, 1);\n}\n",
-        "x.rs",
-    );
+    let diagnostics = run_on("#[test]\nfn t() {\n    assert_eq!(1, 1);\n}\n", "x.rs");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 
@@ -407,10 +395,7 @@ fn assertion_free_rust_non_test_function_ignored() {
 
 #[test]
 fn assertion_free_python_no_assert() {
-    let diagnostics = run_on(
-        "def test_thing():\n    x = 1\n    print(x)\n",
-        "x.py",
-    );
+    let diagnostics = run_on("def test_thing():\n    x = 1\n    print(x)\n", "x.py");
     insta::assert_yaml_snapshot!(diagnostics);
 }
 

@@ -26,7 +26,8 @@ static PATTERNS: Lazy<Vec<Pattern>> = Lazy::new(|| {
         },
         Pattern {
             label: "OpenAI API key",
-            regex: Regex::new(r"sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}").expect("valid regex"),
+            regex: Regex::new(r"sk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}")
+                .expect("valid regex"),
         },
         Pattern {
             label: "private key header",
@@ -48,11 +49,8 @@ impl Rule for HardcodedSecretRule {
         let mut diagnostics = Vec::new();
         for pattern in PATTERNS.iter() {
             for m in pattern.regex.find_iter(ctx.source) {
-                let span = Span::from_byte_range(
-                    ctx.path.to_path_buf(),
-                    ctx.source,
-                    m.start()..m.end(),
-                );
+                let span =
+                    Span::from_byte_range(ctx.path.to_path_buf(), ctx.source, m.start()..m.end());
                 if !ctx.line_in_changes(span.line_start) {
                     continue;
                 }
