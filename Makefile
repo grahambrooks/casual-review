@@ -110,36 +110,27 @@ verify-release: lint test ## Pre-release verification (lint + test)
 		exit 1; \
 	fi
 
-# Two release flows:
+# Release flows:
 #
-#   make release                          — tag whatever's in Cargo.toml right now.
-#                                           Assumes the version is committed and
-#                                           ready to ship. Useful when you've
-#                                           already bumped, or for the first
-#                                           release of an existing version.
+#   make release                       — auto-compute today's YYYY.M.D, bump
+#                                        Cargo.toml if needed, commit, and tag.
+#                                        If Cargo.toml already matches today,
+#                                        tag-only (no bump commit).
 #
-#   make release VERSION=2026.5.0         — bump Cargo.toml to VERSION, commit,
-#                                           and tag in one step.
+#   make release VERSION=2026.5.3      — explicit version, bump+tag.
 #
 # Both gate on a clean working tree, an unused tag, and passing lint + test.
-# Neither pushes — the next-step push is printed.
+# Neither pushes — the next-step push command is printed.
 .PHONY: release
-release: ## Tag current version, or bump+tag with VERSION=YYYY.M.PATCH
+release: ## Tag today's CalVer (YYYY.M.D), or bump+tag with VERSION=...
 	@target_version="$(VERSION)"; \
 	if [ -z "$$target_version" ]; then \
-		target_version="$(CURRENT)"; \
-		mode="tag-only"; \
-	else \
-		mode="bump-and-tag"; \
-		if ! echo "$$target_version" | grep -qE '^[0-9]{4}\.[0-9]+\.[0-9]+$$'; then \
-			echo "error: VERSION must match YYYY.M.PATCH (got: $$target_version)"; \
-			exit 1; \
-		fi; \
-		if [ "$$target_version" = "$(CURRENT)" ]; then \
-			echo "error: VERSION ($$target_version) matches current Cargo.toml."; \
-			echo "       Drop VERSION=... to tag the current version instead."; \
-			exit 1; \
-		fi; \
+		target_version=$$(python3 -c "import datetime; t=datetime.date.today(); print(f'{t.year}.{t.month}.{t.day}')"); \
+		echo "==> auto-computed version from today's date: $$target_version"; \
+	fi; \
+	if ! echo "$$target_version" | grep -qE '^[0-9]{4}\.[0-9]+\.[0-9]+$$'; then \
+		echo "error: VERSION must match YYYY.M.D (got: $$target_version)"; \
+		exit 1; \
 	fi; \
 	if [ -n "$$(git status --porcelain)" ]; then \
 		echo "error: working tree is dirty; commit or stash first"; \
@@ -148,7 +139,13 @@ release: ## Tag current version, or bump+tag with VERSION=YYYY.M.PATCH
 	fi; \
 	if git rev-parse --verify --quiet "v$$target_version" >/dev/null; then \
 		echo "error: tag v$$target_version already exists"; \
+		echo "       same-day re-release? bump to tomorrow's date or pass VERSION=... explicitly"; \
 		exit 1; \
+	fi; \
+	if [ "$$target_version" = "$(CURRENT)" ]; then \
+		mode="tag-only"; \
+	else \
+		mode="bump-and-tag"; \
 	fi; \
 	echo "==> mode: $$mode (target: v$$target_version)"; \
 	echo "==> pre-flight: lint + test"; \

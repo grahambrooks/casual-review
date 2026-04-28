@@ -54,7 +54,7 @@ cargo build --release
 
 ## Versioning
 
-`casual-review` uses **CalVer** (`YYYY.M.PATCH`) — the major and minor reflect the release year and month, and patch increments for multiple releases in the same month. Cadence is opportunistic, not scheduled. See [PLAN.md](PLAN.md) for the phased roadmap.
+`casual-review` uses **CalVer** (`YYYY.M.D`) — the version is literally year, month (1-12), and day-of-month (1-31). Today's release would be `2026.4.28`. Cadence is opportunistic, not scheduled; same-day re-releases use the following day's number. See [PLAN.md](PLAN.md) for the phased roadmap.
 
 ## Usage
 

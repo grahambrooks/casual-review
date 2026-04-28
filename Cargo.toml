@@ -1,6 +1,6 @@
 [package]
 name = "casual-review"
-version = "2026.4.0"
+version = "2026.4.28"
 edition = "2021"
 rust-version = "1.80"
 description = "Ultra-fast code review CLI with rustc-quality diagnostics"
@@ -8,8 +8,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/grahambrooks/casual-review"
 homepage = "https://github.com/grahambrooks/casual-review"
 readme = "README.md"
-# CalVer: YYYY.M.PATCH — major (year) and minor (month) reflect release date,
-# patch increments for multiple releases in the same month.
+# CalVer: YYYY.M.D — year, month (1-12), day-of-month (1-31). Same-day
+# re-releases bump to the next day, or use VERSION=... explicitly.
 
 [[bin]]
 name = "cr"
