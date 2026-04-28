@@ -56,12 +56,13 @@ jobs:
             os: ubuntu-latest
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
-          - target: x86_64-apple-darwin
-            os: macos-13
           - target: aarch64-apple-darwin
             os: macos-14
           - target: x86_64-pc-windows-msvc
             os: windows-latest
+          # x86_64-apple-darwin (Intel Mac) intentionally not built. Apple
+          # ended Intel Mac sales in 2023 and the macos-13 GitHub runner queue
+          # is unreliable. Intel Mac users can `cargo install` from source.
 
     steps:
       - uses: actions/checkout@v6
@@ -108,7 +109,6 @@ jobs:
 
           declare -A targets=(
             [aarch64-apple-darwin]=darwin_arm
-            [x86_64-apple-darwin]=darwin_intel
             [aarch64-unknown-linux-gnu]=linux_arm
             [x86_64-unknown-linux-gnu]=linux_intel
           )
@@ -130,7 +130,6 @@ jobs:
           python3 scripts/render-formula.py \
             "${version}" \
             "${shas[aarch64-apple-darwin]}" \
-            "${shas[x86_64-apple-darwin]}" \
             "${shas[aarch64-unknown-linux-gnu]}" \
             "${shas[x86_64-unknown-linux-gnu]}" \
             > Formula/casual-review.rb

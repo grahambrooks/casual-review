@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Render the Homebrew formula with a given version and platform SHA256s.
 
-Usage: render-formula.py VERSION SHA_DARWIN_ARM SHA_DARWIN_INTEL SHA_LINUX_ARM SHA_LINUX_INTEL
+Usage: render-formula.py VERSION SHA_DARWIN_ARM SHA_LINUX_ARM SHA_LINUX_INTEL
 Output is the formula text on stdout.
+
+Note: x86_64-apple-darwin is intentionally not distributed as a binary;
+Intel Mac users should `cargo install` from source.
 """
 
 from __future__ import annotations
@@ -22,8 +25,7 @@ class CasualReview < Formula
       sha256 "{sha_darwin_arm}"
     end
     on_intel do
-      url "https://github.com/grahambrooks/casual-review/releases/download/v{version}/cr-v{version}-x86_64-apple-darwin.tar.gz"
-      sha256 "{sha_darwin_intel}"
+      odie "Intel Mac binaries are not provided. Run `cargo install --git https://github.com/grahambrooks/casual-review --locked` to build from source."
     end
   end
 
@@ -50,7 +52,7 @@ end
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 6:
+    if len(argv) != 5:
         print(__doc__, file=sys.stderr)
         return 2
 
@@ -58,9 +60,8 @@ def main(argv: list[str]) -> int:
         TEMPLATE.format(
             version=argv[1],
             sha_darwin_arm=argv[2],
-            sha_darwin_intel=argv[3],
-            sha_linux_arm=argv[4],
-            sha_linux_intel=argv[5],
+            sha_linux_arm=argv[3],
+            sha_linux_intel=argv[4],
         ),
         end="",
     )

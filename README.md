@@ -38,6 +38,8 @@ brew install casual-review
 
 The formula installs the pre-built binary published with each GitHub release, so no Rust toolchain is required.
 
+Supported binary platforms: Apple Silicon (`aarch64-apple-darwin`), Linux x86_64 (`x86_64-unknown-linux-gnu`), Linux ARM64 (`aarch64-unknown-linux-gnu`), Windows x86_64 (`x86_64-pc-windows-msvc`). Intel Mac is not distributed as a binary — `cargo install` (below) handles it.
+
 ### Cargo (any platform)
 
 ```sh
