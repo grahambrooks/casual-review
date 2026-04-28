@@ -1,0 +1,38 @@
+fixtures/eval_assertion_free.rs
+  d9c6d37f255e2a11 1-40
+src/rules/assertion_free_test.rs
+  d9c6d37f255e2a11 1-291
+fixtures/eval_assertion_free.py
+  d9c6d37f255e2a11 1-43
+tests/snapshots.rs
+  d9c6d37f255e2a11 376-472
+src/rules/mod.rs
+  d9c6d37f255e2a11 2,66
+README.md
+  d9c6d37f255e2a11 14-15
+fixtures/eval_assertion_free.ts
+  d9c6d37f255e2a11 1-34
+fixtures/eval_assertion_free.java
+  d9c6d37f255e2a11 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f4591276b29869de0296ce32e024b5d3fef7154c",
+  "prompts": {
+    "d9c6d37f255e2a11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47c88849-1fc7-4952-b5b2-5d36253ec775",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 574,
+      "total_deletions": 2,
+      "accepted_lines": 574,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/c23d0818eec549db1bba0a0474a0289861e47f5ce7994d3d07067fe20ddd195e"
+    }
+  }
+}
