@@ -1,0 +1,38 @@
+Cargo.toml
+  d9c6d37f255e2a11 3,8-12
+Formula/casual-review.rb
+  d9c6d37f255e2a11 1-36
+LICENSE-APACHE
+  d9c6d37f255e2a11 1-201
+README.md
+  d9c6d37f255e2a11 26-49,55-58,101-122,125-130
+.github/workflows/release.yml
+  d9c6d37f255e2a11 1-133
+scripts/render-formula.py
+  d9c6d37f255e2a11 1-71
+LICENSE-MIT
+  d9c6d37f255e2a11 1-21
+.github/workflows/ci.yml
+  d9c6d37f255e2a11 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "e69dad092721d494e6eb29f3a170f723f0690867",
+  "prompts": {
+    "d9c6d37f255e2a11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47c88849-1fc7-4952-b5b2-5d36253ec775",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 610,
+      "total_deletions": 2,
+      "accepted_lines": 610,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/78f625a057a5f37d6c05cb5ad4fae5f9299f240965c7c5ed19474eac9d7d18f8"
+    }
+  }
+}
