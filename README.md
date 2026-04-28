@@ -23,10 +23,38 @@ Early MVP. The pipeline runs end-to-end, but the rule set is small and the proje
 
 ## Install
 
+### Homebrew (macOS / Linux)
+
+```sh
+brew install --formula https://raw.githubusercontent.com/grahambrooks/casual-review/main/Formula/casual-review.rb
+```
+
+Or, if you tap the repo:
+
+```sh
+brew tap grahambrooks/casual-review https://github.com/grahambrooks/casual-review
+brew install casual-review
+```
+
+The formula installs the pre-built binary published with each GitHub release, so no Rust toolchain is required.
+
+### Cargo (any platform)
+
+```sh
+cargo install --git https://github.com/grahambrooks/casual-review --locked
+# binary lands at ~/.cargo/bin/cr
+```
+
+### From source
+
 ```sh
 cargo build --release
 # binary at ./target/release/cr
 ```
+
+## Versioning
+
+`casual-review` uses **CalVer** (`YYYY.M.PATCH`) — the major and minor reflect the release year and month, and patch increments for multiple releases in the same month. Cadence is opportunistic, not scheduled. See [PLAN.md](PLAN.md) for the phased roadmap.
 
 ## Usage
 
@@ -70,6 +98,33 @@ src/cli.rs        clap definitions
 - [PLAN.md](PLAN.md) — phased implementation plan and open decisions
 - [context.md](context.md) — design notes on git as substrate for review/agent annotations
 
+## Releases
+
+Releases are tag-driven. Pushing a tag matching `v*.*.*` (e.g., `v2026.4.0`) triggers `.github/workflows/release.yml`, which:
+
+1. Verifies the tag matches `Cargo.toml`'s version.
+2. Builds release binaries for `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, `aarch64-apple-darwin`, and `x86_64-pc-windows-msvc`.
+3. Uploads each archive (with sha256 sidecar) to the GitHub Release.
+4. Updates `Formula/casual-review.rb` with the new version + per-platform SHA256s and commits the change back to `main`.
+
+To cut a release:
+
+```sh
+# Bump version in Cargo.toml, e.g. 2026.5.0
+git commit -am "Release 2026.5.0"
+git tag v2026.5.0
+git push origin main v2026.5.0
+```
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: `cargo build`/`test` on Linux, macOS, and Windows; `cargo fmt --check`; `cargo clippy -D warnings`.
+
 ## License
 
-MIT OR Apache-2.0
+Dual-licensed under either of:
+
+- [MIT License](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
+
+at your option.

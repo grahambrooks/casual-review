@@ -1,0 +1,133 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  BIN_NAME: cr
+
+jobs:
+  verify:
+    name: verify version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches Cargo.toml
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          crate=$(awk -F'"' '/^version = / { print $2; exit }' Cargo.toml)
+          if [ "$tag" != "$crate" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match Cargo.toml version $crate"
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME matches Cargo.toml version $crate"
+
+  build:
+    name: build (${{ matrix.target }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Build, package, and upload
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: cr
+          target: ${{ matrix.target }}
+          archive: $bin-$tag-$target
+          tar: unix
+          zip: windows
+          checksum: sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-formula:
+    name: update homebrew formula
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Formula/casual-review.rb
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          # Wait briefly for release assets to settle
+          sleep 10
+
+          declare -A targets=(
+            [aarch64-apple-darwin]=darwin_arm
+            [x86_64-apple-darwin]=darwin_intel
+            [aarch64-unknown-linux-gnu]=linux_arm
+            [x86_64-unknown-linux-gnu]=linux_intel
+          )
+
+          declare -A shas
+
+          for target in "${!targets[@]}"; do
+            url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/cr-${tag}-${target}.tar.gz"
+            echo "Fetching SHA256 for $target from $url"
+            sha=$(curl -sL "$url" | sha256sum | awk '{print $1}')
+            if [ -z "$sha" ] || [ "$sha" = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]; then
+              echo "::error::could not fetch $url"
+              exit 1
+            fi
+            shas[$target]=$sha
+            echo "  $target = $sha"
+          done
+
+          python3 scripts/render-formula.py \
+            "${version}" \
+            "${shas[aarch64-apple-darwin]}" \
+            "${shas[x86_64-apple-darwin]}" \
+            "${shas[aarch64-unknown-linux-gnu]}" \
+            "${shas[x86_64-unknown-linux-gnu]}" \
+            > Formula/casual-review.rb
+
+      - name: Commit updated formula
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet Formula/casual-review.rb; then
+            echo "Formula unchanged"
+            exit 0
+          fi
+          git add Formula/casual-review.rb
+          git commit -m "Update Homebrew formula for ${GITHUB_REF_NAME}"
+          git push origin main
