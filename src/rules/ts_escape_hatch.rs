@@ -3,6 +3,12 @@ use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::parse::Language;
 use tree_sitter::{Query, QueryCursor};
 
+// ts-escape-hatch needs to dispatch on capture index since the query has two
+// alternative patterns (`@c` for comment directives, `@nn` for non-null
+// assertions). The capture-name lookup is done inline rather than via
+// find_capture because each match yields exactly one capture and we want to
+// branch on which one it is.
+
 pub struct TsEscapeHatchRule;
 
 const TS_QUERY: &str = r#"

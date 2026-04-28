@@ -1,3 +1,4 @@
+use super::util::find_capture;
 use super::{Rule, RuleCtx};
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::parse::Language;
@@ -103,27 +104,10 @@ fn match_ts<'a>(
     captures: &'a [tree_sitter::QueryCapture<'a>],
     source: &[u8],
 ) -> Option<(String, Node<'a>)> {
-    let id_idx = query.capture_index_for_name("id");
-    let obj_idx = query.capture_index_for_name("obj");
-    let prop_idx = query.capture_index_for_name("prop");
-    let call_idx = query.capture_index_for_name("call")?;
-
-    let mut id_node = None;
-    let mut obj_node = None;
-    let mut prop_node = None;
-    let mut call_node = None;
-    for cap in captures {
-        if Some(cap.index) == id_idx {
-            id_node = Some(cap.node);
-        } else if Some(cap.index) == obj_idx {
-            obj_node = Some(cap.node);
-        } else if Some(cap.index) == prop_idx {
-            prop_node = Some(cap.node);
-        } else if cap.index == call_idx {
-            call_node = Some(cap.node);
-        }
-    }
-    let call_node = call_node?;
+    let call_node = find_capture(query, captures, "call")?;
+    let id_node = find_capture(query, captures, "id");
+    let obj_node = find_capture(query, captures, "obj");
+    let prop_node = find_capture(query, captures, "prop");
 
     if let Some(id) = id_node {
         let name = id.utf8_text(source).unwrap_or("");
@@ -165,19 +149,8 @@ fn match_java<'a>(
     captures: &'a [tree_sitter::QueryCapture<'a>],
     source: &[u8],
 ) -> Option<(String, Node<'a>)> {
-    let name_idx = query.capture_index_for_name("name")?;
-    let anno_idx = query.capture_index_for_name("anno")?;
-
-    let mut name_node = None;
-    let mut anno_node = None;
-    for cap in captures {
-        if cap.index == name_idx {
-            name_node = Some(cap.node);
-        } else if cap.index == anno_idx {
-            anno_node = Some(cap.node);
-        }
-    }
-    let (name_node, anno_node) = (name_node?, anno_node?);
+    let name_node = find_capture(query, captures, "name")?;
+    let anno_node = find_capture(query, captures, "anno")?;
     let name = name_node.utf8_text(source).ok()?;
     match name {
         "Disabled" => Some(("`@Disabled` disables this test".to_string(), anno_node)),

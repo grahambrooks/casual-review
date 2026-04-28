@@ -1,3 +1,4 @@
+use super::util::{find_child, is_empty_block};
 use super::{Rule, RuleCtx};
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::parse::Language;
@@ -107,28 +108,6 @@ fn empty_java_catch(clause: &Node<'_>, source: &[u8]) -> Option<String> {
     Some("empty `catch` block silently swallows the exception".to_string())
 }
 
-fn find_child<'a>(node: &Node<'a>, kind: &str) -> Option<Node<'a>> {
-    let mut walker = node.walk();
-    let result = node.children(&mut walker).find(|c| c.kind() == kind);
-    result
-}
-
-fn is_empty_block(node: &Node<'_>, source: &[u8]) -> bool {
-    let mut walker = node.walk();
-    for child in node.children(&mut walker) {
-        match child.kind() {
-            "{" | "}" | ";" | "comment" | "line_comment" | "block_comment" => continue,
-            _ => {
-                let text = child.utf8_text(source).unwrap_or("");
-                if text.trim().is_empty() {
-                    continue;
-                }
-                return false;
-            }
-        }
-    }
-    true
-}
 
 fn python_block_is_pass_only(block: &Node<'_>, source: &[u8]) -> bool {
     let mut walker = block.walk();

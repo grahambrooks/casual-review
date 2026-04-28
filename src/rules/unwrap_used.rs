@@ -1,3 +1,4 @@
+use super::util::find_capture;
 use super::{Rule, RuleCtx};
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::parse::Language;
@@ -27,28 +28,15 @@ impl Rule for UnwrapUsedRule {
             return Vec::new();
         };
 
-        let method_idx = query
-            .capture_index_for_name("method")
-            .expect("query has @method capture");
-        let call_idx = query
-            .capture_index_for_name("call")
-            .expect("query has @call capture");
-
         let mut cursor = QueryCursor::new();
         let source_bytes = ctx.source.as_bytes();
         let mut diagnostics = Vec::new();
 
         for m in cursor.matches(&query, tree.root_node(), source_bytes) {
-            let mut method_node = None;
-            let mut call_node = None;
-            for cap in m.captures {
-                if cap.index == method_idx {
-                    method_node = Some(cap.node);
-                } else if cap.index == call_idx {
-                    call_node = Some(cap.node);
-                }
-            }
-            let (Some(method_node), Some(call_node)) = (method_node, call_node) else {
+            let (Some(method_node), Some(call_node)) = (
+                find_capture(&query, m.captures, "method"),
+                find_capture(&query, m.captures, "call"),
+            ) else {
                 continue;
             };
             let method = method_node.utf8_text(source_bytes).unwrap_or("");

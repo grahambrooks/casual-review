@@ -1,6 +1,4 @@
-pub mod any_type;
-pub mod api_surface_change;
-pub mod bare_except;
+// Universal rules — apply to every supported language.
 pub mod debug_print;
 pub mod disabled_test;
 pub mod empty_catch;
@@ -9,8 +7,18 @@ pub mod large_function;
 pub mod parse_error;
 pub mod todo_marker;
 pub mod trailing_whitespace;
-pub mod ts_escape_hatch;
-pub mod unwrap_used;
+
+// Language-specific rules.
+pub mod any_type; // TypeScript / TSX
+pub mod bare_except; // Python
+pub mod ts_escape_hatch; // TypeScript / TSX
+pub mod unwrap_used; // Rust
+
+// Diff-aware rules — require old vs new tree.
+pub mod api_surface_change;
+
+// Shared helpers used across rules.
+pub(crate) mod util;
 
 use crate::diagnostic::Diagnostic;
 use crate::parse::Language;
@@ -44,18 +52,21 @@ pub trait Rule: Send + Sync {
 
 pub fn default_rules() -> Vec<Box<dyn Rule>> {
     vec![
+        // Universal
         Box::new(parse_error::ParseErrorRule),
         Box::new(todo_marker::TodoMarkerRule),
         Box::new(trailing_whitespace::TrailingWhitespaceRule),
         Box::new(large_function::LargeFunctionRule),
         Box::new(debug_print::DebugPrintRule),
+        Box::new(empty_catch::EmptyCatchRule),
+        Box::new(disabled_test::DisabledTestRule),
+        Box::new(hardcoded_secret::HardcodedSecretRule),
+        // Language-specific
         Box::new(unwrap_used::UnwrapUsedRule),
         Box::new(any_type::AnyTypeRule),
         Box::new(bare_except::BareExceptRule),
-        Box::new(empty_catch::EmptyCatchRule),
-        Box::new(disabled_test::DisabledTestRule),
         Box::new(ts_escape_hatch::TsEscapeHatchRule),
-        Box::new(hardcoded_secret::HardcodedSecretRule),
+        // Diff-aware
         Box::new(api_surface_change::ApiSurfaceChangeRule),
     ]
 }

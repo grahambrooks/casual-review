@@ -1,3 +1,4 @@
+use super::util::find_capture;
 use super::{Rule, RuleCtx};
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::parse::Language;
@@ -39,9 +40,6 @@ impl Rule for DebugPrintRule {
             return Vec::new();
         };
 
-        let obj_idx = query.capture_index_for_name("obj");
-        let method_idx = query.capture_index_for_name("method");
-
         let mut cursor = QueryCursor::new();
         let mut diagnostics = Vec::new();
         let source_bytes = ctx.source.as_bytes();
@@ -71,16 +69,10 @@ impl Rule for DebugPrintRule {
                     }
                 }
                 Language::TypeScript | Language::Tsx => {
-                    let mut obj_node = None;
-                    let mut method_node = None;
-                    for cap in m.captures {
-                        if Some(cap.index) == obj_idx {
-                            obj_node = Some(cap.node);
-                        } else if Some(cap.index) == method_idx {
-                            method_node = Some(cap.node);
-                        }
-                    }
-                    let (Some(obj_node), Some(method_node)) = (obj_node, method_node) else {
+                    let (Some(obj_node), Some(method_node)) = (
+                        find_capture(&query, m.captures, "obj"),
+                        find_capture(&query, m.captures, "method"),
+                    ) else {
                         continue;
                     };
                     let obj = obj_node.utf8_text(source_bytes).unwrap_or("");
