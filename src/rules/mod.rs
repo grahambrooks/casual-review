@@ -1,4 +1,5 @@
 // Universal rules — apply to every supported language.
+pub mod assertion_free_test;
 pub mod complexity;
 pub mod debug_print;
 pub mod disabled_test;
@@ -62,6 +63,7 @@ pub fn default_rules() -> Vec<Box<dyn Rule>> {
         Box::new(debug_print::DebugPrintRule),
         Box::new(empty_catch::EmptyCatchRule),
         Box::new(disabled_test::DisabledTestRule),
+        Box::new(assertion_free_test::AssertionFreeTestRule),
         Box::new(hardcoded_secret::HardcodedSecretRule),
         // Language-specific
         Box::new(unwrap_used::UnwrapUsedRule),

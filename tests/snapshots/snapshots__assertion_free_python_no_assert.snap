@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: assertion-free-test
+  severity: warning
+  message: "test `test_thing` has no assertions"
+  primary:
+    file: x.py
+    byte_range:
+      start: 0
+      end: 40
+    line_start: 1
+    col_start: 1
+    line_end: 3
+    col_end: 13
+  helps:
+    - "a test that doesn't assert anything can't meaningfully fail — add assertions or delete the test"
+- code: debug-print
+  severity: warning
+  message: "debug output: `print()`"
+  primary:
+    file: x.py
+    byte_range:
+      start: 32
+      end: 37
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 10
+  helps:
+    - remove before merging or replace with a real logger

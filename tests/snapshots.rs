@@ -373,6 +373,104 @@ fn complexity_skips_nested_function_body() {
 }
 
 #[test]
+fn assertion_free_rust_test_no_assert() {
+    let diagnostics = run_on(
+        "#[test]\nfn t() {\n    let x = 1 + 1;\n    let _ = x;\n}\n",
+        "x.rs",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_rust_test_with_assert() {
+    let diagnostics = run_on(
+        "#[test]\nfn t() {\n    assert_eq!(1, 1);\n}\n",
+        "x.rs",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_rust_tokio_test() {
+    let diagnostics = run_on(
+        "#[tokio::test]\nasync fn t() {\n    let _x = 42;\n}\n",
+        "x.rs",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_rust_non_test_function_ignored() {
+    let diagnostics = run_on("fn helper() {\n    let _x = 1;\n}\n", "x.rs");
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_python_no_assert() {
+    let diagnostics = run_on(
+        "def test_thing():\n    x = 1\n    print(x)\n",
+        "x.py",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_python_pytest_raises() {
+    let diagnostics = run_on(
+        "import pytest\n\ndef test_raises():\n    with pytest.raises(ValueError):\n        int(\"x\")\n",
+        "x.py",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_python_unittest_assert() {
+    let diagnostics = run_on(
+        "class T:\n    def test_method(self):\n        x = 1\n        self.assertEqual(x, 1)\n",
+        "x.py",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_typescript_it_no_expect() {
+    let diagnostics = run_on(
+        "declare const it: any;\nit(\"forgot\", () => {\n    const x = 1;\n    console.log(x);\n});\n",
+        "x.ts",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_typescript_it_with_expect() {
+    let diagnostics = run_on(
+        "declare const it: any;\ndeclare const expect: any;\nit(\"good\", () => {\n    expect(1).toBe(1);\n});\n",
+        "x.ts",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_java_no_assert() {
+    let diagnostics = run_on(
+        "import org.junit.jupiter.api.Test;\n\
+         public class T {\n    @Test public void thing() { int x = 1; }\n}\n",
+        "T.java",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn assertion_free_java_with_verify() {
+    let diagnostics = run_on(
+        "import org.junit.jupiter.api.Test;\n\
+         public class T {\n    @Test public void thing() {\n        Object m = new Object();\n        verify(m);\n    }\n    private static void verify(Object o) {}\n}\n",
+        "T.java",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
 fn rust_large_function() {
     let mut body = String::from("fn big() {\n");
     for i in 0..50 {

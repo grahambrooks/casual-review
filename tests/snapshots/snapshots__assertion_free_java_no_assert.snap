@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: assertion-free-test
+  severity: warning
+  message: "test `thing` has no assertions"
+  primary:
+    file: T.java
+    byte_range:
+      start: 56
+      end: 96
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 45
+  helps:
+    - "a test that doesn't assert anything can't meaningfully fail — add assertions or delete the test"
