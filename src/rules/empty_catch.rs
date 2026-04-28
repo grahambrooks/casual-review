@@ -16,6 +16,17 @@ impl Rule for EmptyCatchRule {
         "empty-catch"
     }
 
+    fn explain(&self) -> &'static str {
+        "An error handler with an empty body — `Err(_) => {}` (Rust), `except: pass` or \
+         `except E: pass` (Python), `catch (e) {}` (TS), `catch (Exception e) {}` (Java).\n\n\
+         Empty handlers silently swallow errors. The first time a real failure flows through, \
+         it disappears with no trace. This is one of the highest-signal review smells across \
+         every language.\n\n\
+         Fix: handle the error meaningfully, log it, re-throw, or — if you genuinely intend \
+         to ignore — leave a comment explaining why so the next reader doesn't have to guess. \
+         For Python `except: pass` specifically, also see `bare-except`."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

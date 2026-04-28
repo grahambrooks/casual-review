@@ -14,6 +14,15 @@ impl Rule for TodoMarkerRule {
         "todo-marker"
     }
 
+    fn explain(&self) -> &'static str {
+        "A TODO, FIXME, or XXX marker in a comment. Fires only when the marker stands as a \
+         whole word (so `TODOs` is ignored).\n\n\
+         These are signals that someone left work undone. In a PR review, the question is \
+         usually \"is this work tracked elsewhere?\" If yes, the comment can be promoted to a \
+         linked issue and removed. If no, it's a hidden backlog item. Severity is Note — \
+         informational, not blocking."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

@@ -18,6 +18,21 @@ impl Rule for ApiSurfaceChangeRule {
         "api-surface-change"
     }
 
+    fn explain(&self) -> &'static str {
+        "Public symbols added or removed in the diff. This rule is diff-aware — it compares \
+         the working-tree (or staged) version of a file against its HEAD blob and reports \
+         what changed in the public surface.\n\n\
+         Public means: `pub` items in Rust, `export` declarations in TS, top-level `def`/`class` \
+         in Python (anything not starting with `_`), and `public class`/`interface`/`enum`/\
+         `record` in Java.\n\n\
+         Severity is Note — this isn't a problem, it's a heads-up. Reviewers (human or agent) \
+         should pay extra attention to: naming consistency, whether docs need updating, and \
+         downstream callers that may break on a removal.\n\n\
+         The rule a generic linter cannot write — it requires knowing what was there before. \
+         Currently scopes to top-level types/functions; method-level surface tracking is a \
+         possible Phase 2."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(new_tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

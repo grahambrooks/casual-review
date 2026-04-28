@@ -8,6 +8,15 @@ impl Rule for ParseErrorRule {
         "parse-error"
     }
 
+    fn explain(&self) -> &'static str {
+        "The tree-sitter grammar could not parse a region of the file. \
+         This is severity Error because every other lint depends on a parseable tree.\n\n\
+         Common causes: incomplete code mid-edit, an unclosed brace or paren, a syntax error \
+         the language compiler would also reject. Fix by completing the syntax. \
+         If the parser disagrees with code that you believe is valid, the grammar may need \
+         updating — open an issue."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let Some(tree) = ctx.tree else {
             return Vec::new();

@@ -13,6 +13,22 @@ impl Rule for ComplexityRule {
         "cognitive-complexity"
     }
 
+    fn explain(&self) -> &'static str {
+        "Sonar-style cognitive complexity, scored per function. Threshold 15.\n\n\
+         The score grows fastest with nesting depth: each level of nesting adds the current \
+         depth to the score for any structure inside it, so deeply-nested code is penalized \
+         much more than flat code with the same number of branches. This matches what \
+         reviewers actually flag in PRs.\n\n\
+         Fix: extract helpers (each becomes its own function with its own score), return \
+         early to flatten control flow, invert conditions to avoid an extra `else`, or split \
+         the function into a coordinator and per-branch helpers. The threshold is heuristic — \
+         a function at 16 isn't dramatically worse than one at 14, but a function at 30 \
+         almost always wants splitting.\n\n\
+         The implementation is approximate vs Sonar by ~20% on edge cases (chained `&&`/`||`, \
+         `elif` branches, recursion). Relative ranking holds; treat the absolute number as a \
+         signal, not a contract."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

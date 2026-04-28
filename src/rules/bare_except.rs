@@ -12,6 +12,17 @@ impl Rule for BareExceptRule {
         "bare-except"
     }
 
+    fn explain(&self) -> &'static str {
+        "A Python `except:` clause with no exception type. Catches *everything*, including \
+         `KeyboardInterrupt` and `SystemExit` — making the program impossible to ctrl-C and \
+         masking errors that should propagate.\n\n\
+         Fix: catch a specific type. `except Exception:` is the broad-but-safe choice (excludes \
+         `KeyboardInterrupt` and `SystemExit`, includes everything else). If you want \
+         truly-everything for a top-level handler, name `BaseException` so the intent is \
+         explicit.\n\n\
+         For empty bodies (any exception type), see `empty-catch`."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

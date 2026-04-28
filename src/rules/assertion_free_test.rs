@@ -10,6 +10,21 @@ impl Rule for AssertionFreeTestRule {
         "assertion-free-test"
     }
 
+    fn explain(&self) -> &'static str {
+        "A test function with no assertion calls in its body. The most common shape: \
+         someone wrote a `#[test] fn shouldFoo` or `@Test public void shouldFoo()` to scaffold \
+         a test name, intended to fill in the body later, and forgot.\n\n\
+         An assertion-free test can never fail meaningfully — it 'passes' as long as the code \
+         doesn't panic or throw, which gives false confidence about coverage.\n\n\
+         The rule recognises a wide set of assertion shapes: `assert*!`/`debug_assert*!`/\
+         `panic!`/`unreachable!` (Rust), `assert` statements + `pytest.raises`/`pytest.warns`/\
+         `self.assert*` (Python), `expect(...)`/`assert(...)`/`chai.*` (TS), \
+         `assert*`/`verify`/`fail` (Java including Mockito and AssertJ).\n\n\
+         Fix: add the missing assertion, or delete the test if it's no longer needed. \
+         A pure 'this code doesn't crash' check is occasionally legitimate — write the \
+         assertion explicitly anyway (`assert!(thing(args).is_ok())`) to document intent."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

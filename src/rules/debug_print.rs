@@ -25,6 +25,20 @@ impl Rule for DebugPrintRule {
         "debug-print"
     }
 
+    fn explain(&self) -> &'static str {
+        "Calls to language-specific debug-output primitives — `println!`/`eprintln!`/`dbg!` \
+         (Rust), `print()`/`pprint()`/`breakpoint()` (Python), \
+         `console.log/debug/info/warn/trace` (TS), `System.out.println`/`System.err.println`/\
+         `*.printStackTrace()` (Java).\n\n\
+         These often start as quick instrumentation during development and slip into the \
+         final commit. They pollute production output, sometimes leak data, and indicate \
+         the missing piece is real logging.\n\n\
+         Fix: remove the call, or replace with a structured logger (`tracing` in Rust, \
+         `logging` in Python, a real logger in TS/Java). Tests and main-program output are \
+         legitimate exceptions; path-based suppression in a config will eventually let those \
+         skip the rule."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

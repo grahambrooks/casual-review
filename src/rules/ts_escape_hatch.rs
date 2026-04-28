@@ -36,6 +36,22 @@ impl Rule for TsEscapeHatchRule {
         "ts-escape-hatch"
     }
 
+    fn explain(&self) -> &'static str {
+        "TypeScript constructs that bypass the type system: `@ts-ignore` (suppresses next-line \
+         errors), `@ts-nocheck` (disables type checking for the whole file), `@ts-expect-error` \
+         (asserts an error must occur), and the non-null assertion postfix `!` (claims a \
+         possibly-null value is non-null without checking).\n\n\
+         Each of these defers the type system to the developer's claim. They're sometimes \
+         necessary — third-party `.d.ts` is wrong, library types lag behind runtime — but \
+         every escape hatch is a place a future bug can hide.\n\n\
+         Fix: address the underlying type error (missing import, wrong type arg, missing \
+         narrow), or — when you genuinely must escape — explain why in a comment beside the \
+         directive so the next reader knows whether to remove it. Non-null assertions usually \
+         want an explicit `if (x == null) throw ...` guard or an early-return that makes the \
+         narrowing obvious.\n\n\
+         For explicit `any` type annotations specifically, see `any-type`."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

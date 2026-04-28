@@ -17,6 +17,18 @@ impl Rule for UnwrapUsedRule {
         "unwrap-used"
     }
 
+    fn explain(&self) -> &'static str {
+        "Calls to `.unwrap()` or `.expect()` on `Result` or `Option` in Rust source code.\n\n\
+         Both panic on the unhappy path. In production code, panics are usually the wrong \
+         response to an error: they kill the process, lose state, and produce a crash report \
+         where a structured error would have been more useful.\n\n\
+         Fix: propagate with the `?` operator, return a `Result`, or `match`/`if let` to \
+         handle both arms. `.expect(\"reason\")` with a clear panic message is acceptable \
+         when the unhappy path is genuinely impossible (post-`is_some()` check, compile-time \
+         constants like regex literals, etc.) — make the why non-obvious. Test code routinely \
+         uses `.unwrap()`; that's fine and path-based suppression will eventually allow it."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

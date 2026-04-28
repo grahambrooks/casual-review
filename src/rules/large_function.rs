@@ -25,6 +25,17 @@ impl Rule for LargeFunctionRule {
         "large-function"
     }
 
+    fn explain(&self) -> &'static str {
+        "Function body longer than 40 lines. Long functions are harder to test (more inputs to \
+         set up), harder to review (more scrolling and state to track), and a frequent home for \
+         duplicated logic.\n\n\
+         Fix: extract helpers, return early to flatten control flow, or split a multi-purpose \
+         function into ones with single responsibilities. The 40-line threshold is a heuristic; \
+         legitimate exceptions exist (long match/switch statements over an enum, for instance). \
+         Use judgment, but treat repeated firings in the same module as a structural smell.\n\n\
+         For a more nesting-aware view, see `cognitive-complexity`."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

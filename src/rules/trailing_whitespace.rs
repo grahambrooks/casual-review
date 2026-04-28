@@ -8,6 +8,12 @@ impl Rule for TrailingWhitespaceRule {
         "trailing-whitespace"
     }
 
+    fn explain(&self) -> &'static str {
+        "Whitespace at the end of a line. Catches drift introduced by editors that don't \
+         auto-trim. Fix by removing the trailing spaces; configure your editor to do this on \
+         save (most do). Severity is Warning — cosmetic but easy to keep clean."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         let bytes = ctx.source.as_bytes();

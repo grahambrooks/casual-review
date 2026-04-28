@@ -52,6 +52,11 @@ impl<'a> RuleCtx<'a> {
 pub trait Rule: Send + Sync {
     fn id(&self) -> &'static str;
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic>;
+
+    /// Multi-paragraph explanation of what the rule catches, why it matters,
+    /// and how to fix it. Used by `cr explain <rule-id>` and AGENTS.md
+    /// workflows for human and agent reviewers alike.
+    fn explain(&self) -> &'static str;
 }
 
 pub fn default_rules() -> Vec<Box<dyn Rule>> {

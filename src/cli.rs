@@ -12,6 +12,14 @@ pub struct Cli {
 pub enum Command {
     /// Run review checks. With no paths, reviews the working-tree diff against HEAD.
     Check(CheckArgs),
+    /// Print documentation for a rule. With no argument, lists all rules.
+    Explain(ExplainArgs),
+}
+
+#[derive(clap::Args, Debug)]
+pub struct ExplainArgs {
+    /// Rule id (e.g. `cognitive-complexity`). Omit to list all rules.
+    pub rule: Option<String>,
 }
 
 #[derive(clap::Args, Debug)]

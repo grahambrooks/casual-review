@@ -24,6 +24,19 @@ impl Rule for DisabledTestRule {
         "disabled-test"
     }
 
+    fn explain(&self) -> &'static str {
+        "A test marked as disabled or skipped — `#[ignore]` (Rust), `@pytest.mark.skip`/\
+         `@pytest.mark.skipif`/`@unittest.skip*` (Python), `xit`/`it.skip`/`describe.skip` (TS), \
+         `@Disabled`/`@Ignore` (Java). Also flags `it.only` style focus markers, which narrow \
+         the suite to a single test and are usually leftover from local debugging.\n\n\
+         Disabled tests rot quickly. They drift out of sync with the code they cover and \
+         provide false confidence about coverage. In a PR review, the question is: why is this \
+         disabled, and is it tracked anywhere?\n\n\
+         Fix: re-enable and address whatever was broken, or delete if obsolete. If a test is \
+         genuinely flaky and a fix is in flight, prefer linking the tracking issue in the \
+         skip reason."
+    }
+
     fn run(&self, ctx: &RuleCtx<'_>) -> Vec<Diagnostic> {
         let (Some(tree), Some(language)) = (ctx.tree, ctx.language) else {
             return Vec::new();

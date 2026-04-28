@@ -72,6 +72,14 @@ If `cr check` produces no output, it's either because nothing fired (working tre
 
 Exit codes: `0` clean, `1` errors found, `2` tool failure.
 
+`cr explain` lists all rules with one-line summaries. `cr explain <rule-id>` (e.g. `cr explain cognitive-complexity`) prints full documentation for a rule — what it catches, why it matters, how to fix it.
+
+## Using cr with an AI agent
+
+`cr` is designed to be useful to LLM agents (Claude Code, Cursor, etc.) as well as humans. The recommended workflow, JSON schema, rule semantics, and stability commitments are documented in [AGENTS.md](AGENTS.md). Claude Code users will find a brief orientation in [CLAUDE.md](CLAUDE.md).
+
+In short: agents should call `cr check --format json` (or `--repo`/`--staged`), parse one diagnostic per line, prioritize by severity, and use `cr explain <rule-id>` to look up rule semantics on demand. The JSON schema is stable across patch releases within a CalVer minor.
+
 ## Tech
 
 - **Rust** for cold-start speed and parallelism (rayon).

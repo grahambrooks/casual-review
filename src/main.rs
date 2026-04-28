@@ -1,9 +1,10 @@
 use anyhow::Context;
-use casual_review::cli::{CheckArgs, Cli, Command, FormatArg};
+use casual_review::cli::{CheckArgs, Cli, Command, ExplainArgs, FormatArg};
 use casual_review::diagnostic::Severity;
 use casual_review::engine::{run_diff, run_paths, run_repo, EngineOutput};
 use casual_review::git::DiffSpec;
 use casual_review::render::{self, Format};
+use casual_review::rules::default_rules;
 use clap::Parser;
 use std::io::Write;
 use std::process::ExitCode;
@@ -20,6 +21,35 @@ fn main() -> ExitCode {
             Ok(code) => code,
             Err(e) => {
                 eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
+        Command::Explain(args) => run_explain(args),
+    }
+}
+
+fn run_explain(args: ExplainArgs) -> ExitCode {
+    let rules = default_rules();
+    match args.rule {
+        None => {
+            println!("Available rules ({}):\n", rules.len());
+            for rule in &rules {
+                let id = rule.id();
+                let summary = rule.explain().lines().next().unwrap_or("").trim();
+                println!("  {id:<24} {summary}");
+            }
+            println!("\nRun `cr explain <rule-id>` for full documentation.");
+            ExitCode::SUCCESS
+        }
+        Some(needle) => match rules.iter().find(|r| r.id() == needle) {
+            Some(rule) => {
+                println!("# {}\n", rule.id());
+                println!("{}", rule.explain());
+                ExitCode::SUCCESS
+            }
+            None => {
+                eprintln!("error: unknown rule `{needle}`");
+                eprintln!("       run `cr explain` to list available rules");
                 ExitCode::from(2)
             }
         },
