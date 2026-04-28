@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: any-type
+  severity: warning
+  message: "`any` type defeats the type checker"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 21
+      end: 24
+    line_start: 1
+    col_start: 22
+    line_end: 1
+    col_end: 25
+  helps:
+    - "use `unknown` for unknown shapes, or a specific type"
+- code: any-type
+  severity: warning
+  message: "`any` type defeats the type checker"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 27
+      end: 30
+    line_start: 1
+    col_start: 28
+    line_end: 1
+    col_end: 31
+  helps:
+    - "use `unknown` for unknown shapes, or a specific type"

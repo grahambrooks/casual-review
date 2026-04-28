@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: debug-print
+  severity: warning
+  message: "debug output: ``e.printStackTrace()``"
+  primary:
+    file: C.java
+    byte_range:
+      start: 108
+      end: 127
+    line_start: 4
+    col_start: 31
+    line_end: 4
+    col_end: 50
+  helps:
+    - remove before merging or replace with a real logger

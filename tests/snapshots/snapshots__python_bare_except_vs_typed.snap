@@ -1,0 +1,46 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: bare-except
+  severity: warning
+  message: "bare `except:` catches everything including SystemExit and KeyboardInterrupt"
+  primary:
+    file: x.py
+    byte_range:
+      start: 35
+      end: 41
+    line_start: 4
+    col_start: 5
+    line_end: 4
+    col_end: 11
+  helps:
+    - "catch a specific exception type, e.g. `except Exception:`"
+- code: empty-catch
+  severity: warning
+  message: "empty `except` body silently swallows the exception"
+  primary:
+    file: x.py
+    byte_range:
+      start: 35
+      end: 55
+    line_start: 4
+    col_start: 5
+    line_end: 5
+    col_end: 13
+  helps:
+    - "either handle the error, log it, or comment why it's safe to ignore"
+- code: empty-catch
+  severity: warning
+  message: "empty `except` body silently swallows the exception"
+  primary:
+    file: x.py
+    byte_range:
+      start: 92
+      end: 123
+    line_start: 10
+    col_start: 5
+    line_end: 11
+    col_end: 13
+  helps:
+    - "either handle the error, log it, or comment why it's safe to ignore"

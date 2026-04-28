@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: todo-marker
+  severity: note
+  message: "`TODO` marker"
+  primary:
+    file: C.java
+    byte_range:
+      start: 3
+      end: 7
+    line_start: 1
+    col_start: 4
+    line_end: 1
+    col_end: 8
+  helps:
+    - address before merging or convert to a tracked issue
+- code: debug-print
+  severity: warning
+  message: "debug output: ``System.out.println``"
+  primary:
+    file: C.java
+    byte_range:
+      start: 70
+      end: 91
+    line_start: 4
+    col_start: 9
+    line_end: 4
+    col_end: 30
+  helps:
+    - remove before merging or replace with a real logger

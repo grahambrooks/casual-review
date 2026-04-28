@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: todo-marker
+  severity: note
+  message: "`XXX` marker"
+  primary:
+    file: x.tsx
+    byte_range:
+      start: 3
+      end: 6
+    line_start: 1
+    col_start: 4
+    line_end: 1
+    col_end: 7
+  helps:
+    - address before merging or convert to a tracked issue

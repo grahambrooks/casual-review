@@ -1,0 +1,32 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public struct `Bar` added"
+  primary:
+    file: lib.rs
+    byte_range:
+      start: 0
+      end: 15
+    line_start: 1
+    col_start: 1
+    line_end: 1
+    col_end: 16
+  helps:
+    - "new public surface — confirm naming, docs, and stability"
+- code: api-surface-change
+  severity: note
+  message: "public struct `Foo` removed"
+  primary:
+    file: lib.rs
+    byte_range:
+      start: 0
+      end: 16
+    line_start: 1
+    col_start: 1
+    line_end: 1
+    col_end: 16
+  helps:
+    - downstream callers may break — check for external usages

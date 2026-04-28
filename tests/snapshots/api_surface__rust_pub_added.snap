@@ -1,0 +1,18 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public fn `b` added"
+  primary:
+    file: lib.rs
+    byte_range:
+      start: 14
+      end: 27
+    line_start: 2
+    col_start: 1
+    line_end: 2
+    col_end: 14
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

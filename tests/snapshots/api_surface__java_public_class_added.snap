@@ -1,0 +1,32 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public class `B` added"
+  primary:
+    file: X.java
+    byte_range:
+      start: 18
+      end: 35
+    line_start: 2
+    col_start: 1
+    line_end: 2
+    col_end: 18
+  helps:
+    - "new public surface — confirm naming, docs, and stability"
+- code: api-surface-change
+  severity: note
+  message: "public interface `I` added"
+  primary:
+    file: X.java
+    byte_range:
+      start: 36
+      end: 57
+    line_start: 3
+    col_start: 1
+    line_end: 3
+    col_end: 22
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

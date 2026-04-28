@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: debug-print
+  severity: warning
+  message: "debug output: `console.log`"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 39
+      end: 42
+    line_start: 1
+    col_start: 40
+    line_end: 1
+    col_end: 43
+  helps:
+    - remove before merging or replace with a real logger
+- code: debug-print
+  severity: warning
+  message: "debug output: `console.warn`"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 55
+      end: 59
+    line_start: 1
+    col_start: 56
+    line_end: 1
+    col_end: 60
+  helps:
+    - remove before merging or replace with a real logger

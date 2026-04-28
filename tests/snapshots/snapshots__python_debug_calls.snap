@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: debug-print
+  severity: warning
+  message: "debug output: `print()`"
+  primary:
+    file: x.py
+    byte_range:
+      start: 13
+      end: 18
+    line_start: 2
+    col_start: 5
+    line_end: 2
+    col_end: 10
+  helps:
+    - remove before merging or replace with a real logger
+- code: debug-print
+  severity: warning
+  message: "debug output: `breakpoint()`"
+  primary:
+    file: x.py
+    byte_range:
+      start: 29
+      end: 39
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 15
+  helps:
+    - remove before merging or replace with a real logger

@@ -1,0 +1,10 @@
+AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
+GH_TOKEN = "ghp_abcdefghijklmnopqrstuvwxyz0123456789ABCD"
+OPENAI = "sk-proj-abcdefghij1234567890XYZ"
+GOOGLE = "AIzaSyA-abcdefg_HIJKLMnoPQRstuv012345WXYZ"
+
+PRIVATE = """
+-----BEGIN RSA PRIVATE KEY-----
+MIIBIBADANBgkqhkiG9w0BAQEF
+-----END RSA PRIVATE KEY-----
+"""

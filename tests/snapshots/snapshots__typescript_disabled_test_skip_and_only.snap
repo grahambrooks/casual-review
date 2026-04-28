@@ -1,0 +1,74 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: disabled-test
+  severity: warning
+  message: "`it.skip(...)` disables this test"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 26
+      end: 48
+    line_start: 2
+    col_start: 5
+    line_end: 2
+    col_end: 27
+  helps:
+    - re-enable before merging or remove if no longer needed
+- code: disabled-test
+  severity: warning
+  message: "`xit(...)` is a disabled test"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 54
+      end: 72
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 23
+  helps:
+    - re-enable before merging or remove if no longer needed
+- code: disabled-test
+  severity: warning
+  message: "`it.only(...)` narrows the suite to this test"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 78
+      end: 100
+    line_start: 4
+    col_start: 5
+    line_end: 4
+    col_end: 27
+  helps:
+    - re-enable before merging or remove if no longer needed
+- code: any-type
+  severity: warning
+  message: "`any` type defeats the type checker"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 122
+      end: 125
+    line_start: 6
+    col_start: 19
+    line_end: 6
+    col_end: 22
+  helps:
+    - "use `unknown` for unknown shapes, or a specific type"
+- code: any-type
+  severity: warning
+  message: "`any` type defeats the type checker"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 146
+      end: 149
+    line_start: 7
+    col_start: 20
+    line_end: 7
+    col_end: 23
+  helps:
+    - "use `unknown` for unknown shapes, or a specific type"

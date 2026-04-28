@@ -1,0 +1,18 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public const `b` added"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 27
+      end: 39
+    line_start: 2
+    col_start: 8
+    line_end: 2
+    col_end: 20
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

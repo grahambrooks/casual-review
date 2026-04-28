@@ -1,0 +1,18 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public record `Point` added"
+  primary:
+    file: X.java
+    byte_range:
+      start: 18
+      end: 54
+    line_start: 2
+    col_start: 1
+    line_end: 2
+    col_end: 37
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

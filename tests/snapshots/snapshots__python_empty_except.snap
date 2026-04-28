@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: empty-catch
+  severity: warning
+  message: "empty `except` body silently swallows the exception"
+  primary:
+    file: x.py
+    byte_range:
+      start: 36
+      end: 67
+    line_start: 4
+    col_start: 5
+    line_end: 5
+    col_end: 13
+  helps:
+    - "either handle the error, log it, or comment why it's safe to ignore"

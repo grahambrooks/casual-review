@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: empty-catch
+  severity: warning
+  message: "empty `catch` block silently swallows the error"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 43
+      end: 55
+    line_start: 2
+    col_start: 22
+    line_end: 2
+    col_end: 34
+  helps:
+    - "either handle the error, log it, or comment why it's safe to ignore"

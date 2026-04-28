@@ -1,0 +1,46 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: debug-print
+  severity: warning
+  message: "debug output: `println`"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 13
+      end: 20
+    line_start: 2
+    col_start: 5
+    line_end: 2
+    col_end: 12
+  helps:
+    - remove before merging or replace with a real logger
+- code: debug-print
+  severity: warning
+  message: "debug output: `eprintln`"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 32
+      end: 40
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 13
+  helps:
+    - remove before merging or replace with a real logger
+- code: debug-print
+  severity: warning
+  message: "debug output: `dbg`"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 52
+      end: 55
+    line_start: 4
+    col_start: 5
+    line_end: 4
+    col_end: 8
+  helps:
+    - remove before merging or replace with a real logger

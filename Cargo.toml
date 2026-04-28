@@ -1,0 +1,57 @@
+[package]
+name = "casual-review"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Ultra-fast code review CLI with rustc-quality diagnostics"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "cr"
+path = "src/main.rs"
+
+[lib]
+name = "casual_review"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+clap = { version = "4", features = ["derive"] }
+ariadne = "0.4"
+git2 = { version = "0.19", default-features = false }
+tree-sitter = "0.22"
+tree-sitter-rust = "0.21"
+tree-sitter-python = "0.21"
+tree-sitter-typescript = "0.21"
+tree-sitter-java = "0.21"
+rayon = "1.10"
+regex = "1"
+once_cell = "1"
+ignore = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+insta = { version = "1", features = ["yaml"] }
+assert_cmd = "2"
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "throughput"
+harness = false
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"

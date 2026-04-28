@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: large-function
+  severity: warning
+  message: "function body is 51 lines (threshold: 40)"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 9
+      end: 942
+    line_start: 1
+    col_start: 10
+    line_end: 52
+    col_end: 2
+  helps:
+    - consider extracting helpers; long functions are harder to test and review

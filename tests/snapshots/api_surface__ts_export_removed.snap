@@ -1,0 +1,18 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public interface `I` removed"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 0
+      end: 23
+    line_start: 1
+    col_start: 1
+    line_end: 1
+    col_end: 23
+  helps:
+    - downstream callers may break — check for external usages

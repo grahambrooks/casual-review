@@ -1,0 +1,32 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public function `b` added"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 30
+      end: 45
+    line_start: 2
+    col_start: 8
+    line_end: 2
+    col_end: 23
+  helps:
+    - "new public surface — confirm naming, docs, and stability"
+- code: api-surface-change
+  severity: note
+  message: "public class `C` added"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 53
+      end: 63
+    line_start: 3
+    col_start: 8
+    line_end: 3
+    col_end: 18
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

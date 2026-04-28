@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: disabled-test
+  severity: warning
+  message: "`@pytest.mark.skip` disables this test"
+  primary:
+    file: x.py
+    byte_range:
+      start: 15
+      end: 48
+    line_start: 3
+    col_start: 1
+    line_end: 3
+    col_end: 34
+  helps:
+    - re-enable before merging or remove if no longer needed

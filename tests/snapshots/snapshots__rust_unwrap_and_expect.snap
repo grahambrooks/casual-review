@@ -1,0 +1,32 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: unwrap-used
+  severity: warning
+  message: "`.unwrap()` panics on error"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 49
+      end: 59
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 15
+  helps:
+    - "propagate the error with `?` or handle it explicitly"
+- code: unwrap-used
+  severity: warning
+  message: "`.expect()` panics on error"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 99
+      end: 115
+    line_start: 5
+    col_start: 5
+    line_end: 5
+    col_end: 21
+  helps:
+    - "propagate the error with `?` or handle it explicitly"

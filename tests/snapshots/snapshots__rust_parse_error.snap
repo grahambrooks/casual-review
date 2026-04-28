@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: parse-error
+  severity: error
+  message: "missing `identifier`"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 34
+      end: 35
+    line_start: 2
+    col_start: 8
+    line_end: 3
+    col_end: 1
+  notes:
+    - the tree-sitter grammar could not parse this region

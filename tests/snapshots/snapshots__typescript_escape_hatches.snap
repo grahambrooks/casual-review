@@ -1,0 +1,46 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: ts-escape-hatch
+  severity: warning
+  message: "`@ts-nocheck` disables type checking for the whole file"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 0
+      end: 14
+    line_start: 1
+    col_start: 1
+    line_end: 1
+    col_end: 15
+  helps:
+    - address the underlying type error or narrow the assertion
+- code: ts-escape-hatch
+  severity: warning
+  message: "`@ts-ignore` suppresses the next-line type error"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 58
+      end: 71
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 18
+  helps:
+    - address the underlying type error or narrow the assertion
+- code: ts-escape-hatch
+  severity: warning
+  message: "non-null assertion (`!`) bypasses the null check"
+  primary:
+    file: x.ts
+    byte_range:
+      start: 83
+      end: 87
+    line_start: 4
+    col_start: 12
+    line_end: 4
+    col_end: 16
+  helps:
+    - "guard with an explicit check, or refine the type"

@@ -1,0 +1,16 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.ts
+    byte_range:
+      start: 19
+      end: 22
+    line_start: 1
+    col_start: 20
+    line_end: 1
+    col_end: 23

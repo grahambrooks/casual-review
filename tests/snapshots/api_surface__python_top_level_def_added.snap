@@ -1,0 +1,32 @@
+---
+source: tests/api_surface.rs
+expression: d
+---
+- code: api-surface-change
+  severity: note
+  message: "public def `b` added"
+  primary:
+    file: x.py
+    byte_range:
+      start: 19
+      end: 36
+    line_start: 4
+    col_start: 1
+    line_end: 5
+    col_end: 9
+  helps:
+    - "new public surface — confirm naming, docs, and stability"
+- code: api-surface-change
+  severity: note
+  message: "public class `C` added"
+  primary:
+    file: x.py
+    byte_range:
+      start: 38
+      end: 55
+    line_start: 7
+    col_start: 1
+    line_end: 8
+    col_end: 9
+  helps:
+    - "new public surface — confirm naming, docs, and stability"

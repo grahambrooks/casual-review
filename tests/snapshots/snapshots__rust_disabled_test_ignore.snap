@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: disabled-test
+  severity: warning
+  message: "`#[ignore]` disables this test"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 0
+      end: 9
+    line_start: 1
+    col_start: 1
+    line_end: 1
+    col_end: 10
+  helps:
+    - re-enable before merging or remove if no longer needed

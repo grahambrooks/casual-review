@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: empty-catch
+  severity: warning
+  message: "empty `Err` arm swallows the error"
+  primary:
+    file: x.rs
+    byte_range:
+      start: 86
+      end: 98
+    line_start: 4
+    col_start: 9
+    line_end: 4
+    col_end: 21
+  helps:
+    - "either handle the error, log it, or comment why it's safe to ignore"

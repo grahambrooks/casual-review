@@ -1,0 +1,18 @@
+---
+source: tests/snapshots.rs
+expression: diagnostics
+---
+- code: parse-error
+  severity: error
+  message: syntax error
+  primary:
+    file: x.tsx
+    byte_range:
+      start: 0
+      end: 40
+    line_start: 1
+    col_start: 1
+    line_end: 2
+    col_end: 1
+  notes:
+    - the tree-sitter grammar could not parse this region
