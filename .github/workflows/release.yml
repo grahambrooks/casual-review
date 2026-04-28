@@ -29,9 +29,24 @@ jobs:
           fi
           echo "Tag $GITHUB_REF_NAME matches Cargo.toml version $crate"
 
+  create-release:
+    name: create github release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      # Creates the GitHub Release entity that the build matrix will upload
+      # binaries into. Companion to taiki-e/upload-rust-binary-action below.
+      # If the release already exists (re-run on same tag), this is a no-op.
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: build (${{ matrix.target }})
-    needs: verify
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
