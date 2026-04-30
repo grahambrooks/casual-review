@@ -1,0 +1,36 @@
+# Example .casual-review.toml configuration file
+# Place this file as .casual-review.toml in your project root
+
+# Per-rule configuration
+[rules.todo-marker]
+# Disable TODO/FIXME markers in this project
+enabled = false
+
+[rules.debug-print]
+# Disable debug print detection (println!, console.log, etc.)
+enabled = false
+
+[rules.complexity]
+# Override the default cognitive complexity threshold (default: 15)
+threshold = 20
+
+[rules.large-function]
+# Override the default function size threshold (default: 40 lines)
+max_lines = 50
+
+# Global suppression settings
+[suppress]
+# Suppress diagnostics for files matching these glob patterns
+paths = [
+    "target/",
+    "node_modules/",
+    "dist/",
+    "build/",
+    "*.generated.rs",
+    "migrations/",
+]
+
+# Suppress specific rules globally (optional)
+rules = [
+    "trailing-whitespace",
+]
