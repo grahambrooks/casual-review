@@ -3,10 +3,12 @@ use casual_review::cli::{CheckArgs, Cli, Command, ExplainArgs, FormatArg, Publis
 use casual_review::diagnostic::Severity;
 use casual_review::engine::{run_diff, run_paths, run_repo, EngineOutput};
 use casual_review::git::DiffSpec;
+use casual_review::git_notes;
+use casual_review::notes::NotesPayload;
 use casual_review::render::{self, Format};
 use casual_review::rules::default_rules;
 use clap::Parser;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -168,16 +170,86 @@ fn emit_zero_files_hint(mode: &Mode) {
     }
 }
 
-fn run_publish(_args: PublishArgs) -> anyhow::Result<()> {
-    // TODO: Implement git notes publishing
-    // For now, just print a placeholder
-    println!("cr publish: feature not yet implemented");
+fn run_publish(args: PublishArgs) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir().context("getting current directory")?;
+
+    let output: EngineOutput = if args.from_stdin {
+        // Read JSON diagnostics from stdin
+        let mut json_input = String::new();
+        std::io::stdin().read_to_string(&mut json_input)?;
+        let diagnostics: Vec<casual_review::diagnostic::Diagnostic> = json_input
+            .lines()
+            .filter_map(|line| serde_json::from_str(line).ok())
+            .collect();
+
+        EngineOutput {
+            diagnostics,
+            sources: Default::default(),
+            files_checked: 0,
+        }
+    } else {
+        // Run check to get diagnostics
+        let check_mode = pick_mode(&CheckArgs {
+            paths: vec![],
+            repo: false,
+            staged: false,
+            all: false,
+            verbose: false,
+            format: FormatArg::Json,
+        });
+
+        match &check_mode {
+            Mode::Repo => run_repo(std::slice::from_ref(&cwd))?,
+            Mode::Diff(spec) => run_diff(&cwd, spec.clone(), false)?,
+            Mode::Paths => EngineOutput {
+                diagnostics: vec![],
+                sources: Default::default(),
+                files_checked: 0,
+            },
+        }
+    };
+
+    // Create payload with findings
+    let payload = NotesPayload::new(args.commit.clone(), output.diagnostics.clone());
+
+    // Write to git notes/findings storage
+    git_notes::write_notes(&cwd, &args.commit, payload)?;
+
+    eprintln!(
+        "Published {} finding(s) to commit {}",
+        output.diagnostics.len(),
+        args.commit
+    );
     Ok(())
 }
 
-fn run_show(_args: ShowArgs) -> anyhow::Result<()> {
-    // TODO: Implement git notes reading
-    // For now, just print a placeholder
-    println!("cr show: feature not yet implemented");
-    Ok(())
+fn run_show(args: ShowArgs) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir().context("getting current directory")?;
+
+    // Read findings from git notes
+    match git_notes::read_notes(&cwd, &args.commit)? {
+        Some(payload) => {
+            eprintln!("Findings for commit {}:", args.commit);
+            eprintln!("  Tool: {} v{}", payload.tool, payload.tool_version);
+            eprintln!("  Produced at: {}", payload.produced_at);
+            eprintln!("  Findings: {}", payload.findings.len());
+
+            for finding in &payload.findings {
+                eprintln!(
+                    "  [{:?}] {} ({}:{})",
+                    finding.severity,
+                    finding.rule,
+                    finding.location.file.display(),
+                    finding.location.line_range.0
+                );
+                eprintln!("    {}", finding.message);
+            }
+
+            Ok(())
+        }
+        None => {
+            eprintln!("No findings stored for commit {}", args.commit);
+            Ok(())
+        }
+    }
 }

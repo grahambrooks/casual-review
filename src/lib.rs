@@ -3,6 +3,7 @@ pub mod config;
 pub mod diagnostic;
 pub mod engine;
 pub mod git;
+pub mod git_notes;
 pub mod notes;
 pub mod parse;
 pub mod render;
