@@ -1,6 +1,5 @@
 /// Integration tests for Phase 3: findings persistence and workflow
 /// Tests the publish/show/ack command workflow with a temporary git repo
-
 use casual_review::git_notes;
 use casual_review::notes::{Finding, Location, NotesPayload};
 use std::path::PathBuf;
@@ -40,12 +39,18 @@ fn test_publish_and_show_workflow() -> anyhow::Result<()> {
 
     // Verify the file was created
     let findings_dir = repo_path.join(".cr-findings");
-    assert!(findings_dir.exists(), "Findings directory should be created");
+    assert!(
+        findings_dir.exists(),
+        "Findings directory should be created"
+    );
 
     let entries: Vec<_> = std::fs::read_dir(&findings_dir)?
         .filter_map(Result::ok)
         .collect();
-    assert!(!entries.is_empty(), "At least one findings file should exist");
+    assert!(
+        !entries.is_empty(),
+        "At least one findings file should exist"
+    );
 
     // Read the findings back
     let read_payload = git_notes::read_notes(repo_path, "abc123")?;
@@ -94,8 +99,7 @@ fn test_ack_appends_dismissal() -> anyhow::Result<()> {
     git_notes::write_notes(repo_path, "abc123", payload.clone())?;
 
     // Read back and verify
-    let initial_read = git_notes::read_notes(repo_path, "abc123")?
-        .expect("Should have readings");
+    let initial_read = git_notes::read_notes(repo_path, "abc123")?.expect("Should have readings");
     assert_eq!(initial_read.findings.len(), 1);
 
     // Simulate acknowledgment by adding dismissal
@@ -119,8 +123,7 @@ fn test_ack_appends_dismissal() -> anyhow::Result<()> {
     git_notes::write_notes(repo_path, "abc123", payload)?;
 
     // Read back and verify dismissal was added
-    let updated_read = git_notes::read_notes(repo_path, "abc123")?
-        .expect("Should have readings");
+    let updated_read = git_notes::read_notes(repo_path, "abc123")?.expect("Should have readings");
     assert_eq!(updated_read.findings.len(), 2);
 
     // Check the dismissal entry
@@ -202,9 +205,12 @@ fn test_multiple_findings_per_commit() -> anyhow::Result<()> {
     git_notes::write_notes(repo_path, "def456", payload)?;
 
     // Read back and verify all findings are preserved
-    let read_payload = git_notes::read_notes(repo_path, "def456")?
-        .expect("Should have readings");
-    assert_eq!(read_payload.findings.len(), 3, "All 3 findings should be preserved");
+    let read_payload = git_notes::read_notes(repo_path, "def456")?.expect("Should have readings");
+    assert_eq!(
+        read_payload.findings.len(),
+        3,
+        "All 3 findings should be preserved"
+    );
 
     // Verify each finding's details
     assert!(read_payload
@@ -241,8 +247,8 @@ fn test_empty_findings() -> anyhow::Result<()> {
     git_notes::write_notes(repo_path, "ghi789", payload)?;
 
     // Read back and verify
-    let read_payload = git_notes::read_notes(repo_path, "ghi789")?
-        .expect("Should be able to read empty findings");
+    let read_payload =
+        git_notes::read_notes(repo_path, "ghi789")?.expect("Should be able to read empty findings");
     assert_eq!(read_payload.findings.len(), 0, "Should have no findings");
 
     Ok(())
