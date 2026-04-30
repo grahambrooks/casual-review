@@ -1,10 +1,12 @@
 use anyhow::Context;
-use casual_review::cli::{CheckArgs, Cli, Command, ExplainArgs, FormatArg, PublishArgs, ShowArgs};
+use casual_review::cli::{
+    AckArgs, CheckArgs, Cli, Command, ExplainArgs, FormatArg, PublishArgs, ShowArgs,
+};
 use casual_review::diagnostic::Severity;
 use casual_review::engine::{run_diff, run_paths, run_repo, EngineOutput};
 use casual_review::git::DiffSpec;
 use casual_review::git_notes;
-use casual_review::notes::NotesPayload;
+use casual_review::notes::{Finding, Location, NotesPayload};
 use casual_review::render::{self, Format};
 use casual_review::rules::default_rules;
 use clap::Parser;
@@ -35,6 +37,13 @@ fn main() -> ExitCode {
             }
         },
         Command::Show(args) => match run_show(args) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
+        Command::Ack(args) => match run_ack(args) {
             Ok(_) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("error: {e:#}");
@@ -251,5 +260,56 @@ fn run_show(args: ShowArgs) -> anyhow::Result<()> {
             eprintln!("No findings stored for commit {}", args.commit);
             Ok(())
         }
+    }
+}
+
+fn run_ack(args: AckArgs) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir().context("getting current directory")?;
+
+    // Read existing findings
+    match git_notes::read_notes(&cwd, &args.commit)? {
+        Some(mut payload) => {
+            // Check if finding exists
+            let finding_exists = payload.findings.iter().any(|f| f.id == args.finding_id);
+            if !finding_exists {
+                return Err(anyhow::anyhow!(
+                    "Finding {} not found in commit {}",
+                    args.finding_id,
+                    args.commit
+                ));
+            }
+
+            // Create dismissal entry
+            let dismissal = Finding {
+                id: format!("{}-dismissed", args.finding_id),
+                rule: "dismissed".to_string(),
+                severity: "note".to_string(),
+                location: Location {
+                    file: std::path::PathBuf::from(""),
+                    byte_range: (0, 0),
+                    line_range: (0, 0),
+                    col_range: (0, 0),
+                },
+                message: args.message.clone(),
+                labels: vec![],
+                suggestions: vec![],
+                parent: Some(args.finding_id.clone()),
+            };
+
+            // Append dismissal to findings
+            payload.findings.push(dismissal);
+
+            // Write updated payload
+            git_notes::write_notes(&cwd, &args.commit, payload)?;
+            eprintln!(
+                "Acknowledged finding {} on commit {}",
+                args.finding_id, args.commit
+            );
+            Ok(())
+        }
+        None => Err(anyhow::anyhow!(
+            "No findings found for commit {}",
+            args.commit
+        )),
     }
 }

@@ -18,6 +18,8 @@ pub enum Command {
     Publish(PublishArgs),
     /// Show findings stored in git notes for a commit.
     Show(ShowArgs),
+    /// Dismiss a finding by appending an ack note.
+    Ack(AckArgs),
 }
 
 #[derive(clap::Args, Debug)]
@@ -86,4 +88,19 @@ pub struct ShowArgs {
     /// Output format for findings.
     #[arg(long, value_enum, default_value_t = FormatArg::Human)]
     pub format: FormatArg,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct AckArgs {
+    /// Finding ID to dismiss.
+    #[arg(value_name = "FINDING_ID")]
+    pub finding_id: String,
+
+    /// Optional message for this dismissal.
+    #[arg(value_name = "MESSAGE", default_value = "")]
+    pub message: String,
+
+    /// Commit that the finding is attached to (default: HEAD).
+    #[arg(long, default_value = "HEAD")]
+    pub commit: String,
 }
