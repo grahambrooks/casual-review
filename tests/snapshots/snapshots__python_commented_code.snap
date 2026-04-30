@@ -1,0 +1,99 @@
+---
+source: tests/snapshots.rs
+assertion_line: 490
+expression: diagnostics
+---
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.py
+    byte_range:
+      start: 19
+      end: 26
+    line_start: 2
+    col_start: 5
+    line_end: 2
+    col_end: 12
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.py
+    byte_range:
+      start: 31
+      end: 43
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 17
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.py
+    byte_range:
+      start: 59
+      end: 63
+    line_start: 5
+    col_start: 1
+    line_end: 5
+    col_end: 5
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.py
+    byte_range:
+      start: 125
+      end: 129
+    line_start: 8
+    col_start: 1
+    line_end: 8
+    col_end: 5
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.py
+    byte_range:
+      start: 134
+      end: 149
+    line_start: 9
+    col_start: 5
+    line_end: 9
+    col_end: 20
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.py
+    byte_range:
+      start: 165
+      end: 194
+    line_start: 11
+    col_start: 5
+    line_end: 11
+    col_end: 34
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.py
+    byte_range:
+      start: 199
+      end: 219
+    line_start: 12
+    col_start: 5
+    line_end: 12
+    col_end: 25
+  helps:
+    - delete or restore to active code; git history preserves it

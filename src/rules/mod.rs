@@ -1,5 +1,6 @@
 // Universal rules — apply to every supported language.
 pub mod assertion_free_test;
+pub mod commented_code;
 pub mod complexity;
 pub mod debug_print;
 pub mod disabled_test;
@@ -68,6 +69,7 @@ pub fn default_rules() -> Vec<Box<dyn Rule>> {
         Box::new(large_function::LargeFunctionRule),
         Box::new(complexity::ComplexityRule),
         Box::new(debug_print::DebugPrintRule),
+        Box::new(commented_code::CommentedCodeRule),
         Box::new(empty_catch::EmptyCatchRule),
         Box::new(disabled_test::DisabledTestRule),
         Box::new(assertion_free_test::AssertionFreeTestRule),

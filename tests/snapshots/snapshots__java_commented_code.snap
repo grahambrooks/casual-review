@@ -1,0 +1,85 @@
+---
+source: tests/snapshots.rs
+assertion_line: 508
+expression: diagnostics
+---
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.java
+    byte_range:
+      start: 52
+      end: 65
+    line_start: 3
+    col_start: 9
+    line_end: 3
+    col_end: 22
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.java
+    byte_range:
+      start: 74
+      end: 92
+    line_start: 4
+    col_start: 9
+    line_end: 4
+    col_end: 27
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.java
+    byte_range:
+      start: 101
+      end: 126
+    line_start: 5
+    col_start: 9
+    line_end: 5
+    col_end: 34
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.java
+    byte_range:
+      start: 127
+      end: 135
+    line_start: 6
+    col_start: 1
+    line_end: 6
+    col_end: 9
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.java
+    byte_range:
+      start: 196
+      end: 204
+    line_start: 9
+    col_start: 1
+    line_end: 9
+    col_end: 9
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.java
+    byte_range:
+      start: 213
+      end: 340
+    line_start: 10
+    col_start: 9
+    line_end: 15
+    col_end: 11
+  helps:
+    - delete or restore to active code; git history preserves it

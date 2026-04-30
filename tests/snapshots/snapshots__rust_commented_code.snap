@@ -1,0 +1,71 @@
+---
+source: tests/snapshots.rs
+assertion_line: 481
+expression: diagnostics
+---
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.rs
+    byte_range:
+      start: 19
+      end: 32
+    line_start: 2
+    col_start: 5
+    line_end: 2
+    col_end: 18
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.rs
+    byte_range:
+      start: 37
+      end: 55
+    line_start: 3
+    col_start: 5
+    line_end: 3
+    col_end: 23
+  helps:
+    - delete or restore to active code; git history preserves it
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.rs
+    byte_range:
+      start: 82
+      end: 86
+    line_start: 5
+    col_start: 1
+    line_end: 5
+    col_end: 5
+- code: trailing-whitespace
+  severity: warning
+  message: trailing whitespace
+  primary:
+    file: x.rs
+    byte_range:
+      start: 160
+      end: 164
+    line_start: 8
+    col_start: 1
+    line_end: 8
+    col_end: 5
+- code: commented-code
+  severity: warning
+  message: commented-out code
+  primary:
+    file: x.rs
+    byte_range:
+      start: 169
+      end: 284
+    line_start: 9
+    col_start: 5
+    line_end: 14
+    col_end: 7
+  helps:
+    - delete or restore to active code; git history preserves it

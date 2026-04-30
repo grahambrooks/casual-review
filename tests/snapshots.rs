@@ -471,3 +471,39 @@ fn marker_word_boundary_no_match() {
     let diagnostics = run_on("// TODOs are stored separately\nfn f() {}\n", "x.rs");
     insta::assert_yaml_snapshot!(diagnostics);
 }
+
+#[test]
+fn rust_commented_code() {
+    let diagnostics = run_on(
+        "fn example() {\n    // let x = 5;\n    // let y = x + 10;\n    // println!(\"{}\", y);\n    \n    // This is a regular comment about the code below\n    let real = 42;\n    \n    /*\n    match result {\n        Ok(v) => println!(\"{}\", v),\n        Err(e) => eprintln!(\"error: {}\", e),\n    }\n    */\n}\n",
+        "x.rs",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn python_commented_code() {
+    let diagnostics = run_on(
+        "def example():\n    # x = 5\n    # y = x + 10\n    # print(y)\n    \n    # This is a regular comment about the code\n    real = 42\n    \n    # result = None\n    # try:\n    #     result = do_something()\n    # except ValueError:\n    #     pass\n",
+        "x.py",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn typescript_commented_code() {
+    let diagnostics = run_on(
+        "export function example(): void {\n    // const x = 5;\n    // const y = x + 10;\n    // console.log(y);\n    \n    // This is a regular comment\n    const real = 42;\n    \n    /*\n    const result = await fetch('/api');\n    const data = await result.json();\n    */\n}\n",
+        "x.ts",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
+
+#[test]
+fn java_commented_code() {
+    let diagnostics = run_on(
+        "class Example {\n    public void example() {\n        // int x = 5;\n        // int y = x + 10;\n        // System.out.println(y);\n        \n        // This is a regular comment\n        int real = 42;\n        \n        /*\n        List<String> items = getItems();\n        for (String item : items) {\n            process(item);\n        }\n        */\n    }\n}\n",
+        "x.java",
+    );
+    insta::assert_yaml_snapshot!(diagnostics);
+}
