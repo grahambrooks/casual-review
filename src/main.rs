@@ -1,6 +1,7 @@
 use anyhow::Context;
 use casual_review::cli::{
-    AckArgs, CheckArgs, Cli, Command, ExplainArgs, FormatArg, PublishArgs, ShowArgs,
+    AckArgs, CheckArgs, Cli, Command, ExplainArgs, FetchArgs, FormatArg, PublishArgs, PushArgs,
+    ShowArgs,
 };
 use casual_review::diagnostic::Severity;
 use casual_review::engine::{run_diff, run_paths, run_repo, EngineOutput};
@@ -44,6 +45,20 @@ fn main() -> ExitCode {
             }
         },
         Command::Ack(args) => match run_ack(args) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
+        Command::Fetch(args) => match run_fetch(args) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
+        Command::Push(args) => match run_push(args) {
             Ok(_) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("error: {e:#}");
@@ -312,4 +327,56 @@ fn run_ack(args: AckArgs) -> anyhow::Result<()> {
             args.commit
         )),
     }
+}
+
+fn run_fetch(args: FetchArgs) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir().context("getting current directory")?;
+
+    // Run git fetch for casual-review notes ref
+    let output = std::process::Command::new("git")
+        .current_dir(&cwd)
+        .arg("fetch")
+        .arg(&args.remote)
+        .arg("refs/notes/casual-review:refs/notes/casual-review")
+        .output()
+        .context("running git fetch")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("fatal:") || !stderr.is_empty() {
+            return Err(anyhow::anyhow!("git fetch failed: {}", stderr));
+        }
+    }
+
+    eprintln!(
+        "Fetched findings from {} (refs/notes/casual-review)",
+        args.remote
+    );
+    Ok(())
+}
+
+fn run_push(args: PushArgs) -> anyhow::Result<()> {
+    let cwd = std::env::current_dir().context("getting current directory")?;
+
+    // Run git push for casual-review notes ref
+    let output = std::process::Command::new("git")
+        .current_dir(&cwd)
+        .arg("push")
+        .arg(&args.remote)
+        .arg("refs/notes/casual-review:refs/notes/casual-review")
+        .output()
+        .context("running git push")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("fatal:") || !stderr.is_empty() {
+            return Err(anyhow::anyhow!("git push failed: {}", stderr));
+        }
+    }
+
+    eprintln!(
+        "Pushed findings to {} (refs/notes/casual-review)",
+        args.remote
+    );
+    Ok(())
 }

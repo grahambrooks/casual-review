@@ -20,6 +20,10 @@ pub enum Command {
     Show(ShowArgs),
     /// Dismiss a finding by appending an ack note.
     Ack(AckArgs),
+    /// Fetch findings from a remote repository.
+    Fetch(FetchArgs),
+    /// Push findings to a remote repository.
+    Push(PushArgs),
 }
 
 #[derive(clap::Args, Debug)]
@@ -103,4 +107,18 @@ pub struct AckArgs {
     /// Commit that the finding is attached to (default: HEAD).
     #[arg(long, default_value = "HEAD")]
     pub commit: String,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct FetchArgs {
+    /// Remote to fetch from (default: origin).
+    #[arg(value_name = "REMOTE", default_value = "origin")]
+    pub remote: String,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct PushArgs {
+    /// Remote to push to (default: origin).
+    #[arg(value_name = "REMOTE", default_value = "origin")]
+    pub remote: String,
 }
