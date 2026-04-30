@@ -77,6 +77,8 @@ fn run_check(args: CheckArgs) -> anyhow::Result<ExitCode> {
     let format = match args.format {
         FormatArg::Human => Format::Human,
         FormatArg::Json => Format::Json,
+        FormatArg::Github => Format::Github,
+        FormatArg::Sarif => Format::Sarif,
     };
 
     let mut stderr = std::io::stderr().lock();
@@ -84,6 +86,8 @@ fn run_check(args: CheckArgs) -> anyhow::Result<ExitCode> {
     let writer: &mut dyn Write = match format {
         Format::Human => &mut stderr,
         Format::Json => &mut stdout,
+        Format::Github => &mut stdout,
+        Format::Sarif => &mut stdout,
     };
 
     render::render(format, &output.diagnostics, &output.sources, writer)?;

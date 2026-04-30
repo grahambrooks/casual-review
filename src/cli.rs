@@ -54,4 +54,6 @@ pub struct CheckArgs {
 pub enum FormatArg {
     Human,
     Json,
+    Github,
+    Sarif,
 }
