@@ -9,8 +9,60 @@ use std::path::Path;
 const FINDINGS_DIR: &str = ".cr-findings";
 
 /// Read findings from local storage.
-pub fn read_notes(_repo_path: &Path, _commit: &str) -> anyhow::Result<Option<NotesPayload>> {
-    // TODO: Implement reading from git notes or findings storage
+/// Returns the most recent findings file if it exists.
+pub fn read_notes(repo_path: &Path, _commit: &str) -> anyhow::Result<Option<NotesPayload>> {
+    let findings_dir = repo_path.join(FINDINGS_DIR);
+
+    // If directory doesn't exist, no findings are stored
+    if !findings_dir.exists() {
+        return Ok(None);
+    }
+
+    // Read the most recent findings file
+    let mut latest_file: Option<(std::fs::DirEntry, i64)> = None;
+
+    for entry in std::fs::read_dir(&findings_dir)? {
+        let entry = entry?;
+        let file_name = entry.file_name();
+        let file_name_str = file_name.to_string_lossy();
+
+        // Extract timestamp from filename (findings-{timestamp}.json)
+        if file_name_str.starts_with("findings-") && file_name_str.ends_with(".json") {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    if let Some((_, max_ts)) = &latest_file {
+                        // Get timestamp from filename
+                        let ts_str = file_name_str
+                            .strip_prefix("findings-")
+                            .and_then(|s| s.strip_suffix(".json"))
+                            .unwrap_or("0");
+                        if let Ok(ts) = ts_str.parse::<i64>() {
+                            if ts > *max_ts {
+                                latest_file = Some((entry, ts));
+                            }
+                        }
+                    } else {
+                        let ts_str = file_name_str
+                            .strip_prefix("findings-")
+                            .and_then(|s| s.strip_suffix(".json"))
+                            .unwrap_or("0");
+                        if let Ok(ts) = ts_str.parse::<i64>() {
+                            latest_file = Some((entry, ts));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Read the latest file if found
+    if let Some((entry, _)) = latest_file {
+        let path = entry.path();
+        let contents = std::fs::read_to_string(path)?;
+        let payload: NotesPayload = serde_json::from_str(&contents)?;
+        return Ok(Some(payload));
+    }
+
     Ok(None)
 }
 
