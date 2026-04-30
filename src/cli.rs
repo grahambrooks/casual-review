@@ -14,6 +14,10 @@ pub enum Command {
     Check(CheckArgs),
     /// Print documentation for a rule. With no argument, lists all rules.
     Explain(ExplainArgs),
+    /// Publish findings to git notes on a commit.
+    Publish(PublishArgs),
+    /// Show findings stored in git notes for a commit.
+    Show(ShowArgs),
 }
 
 #[derive(clap::Args, Debug)]
@@ -56,4 +60,30 @@ pub enum FormatArg {
     Json,
     Github,
     Sarif,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct PublishArgs {
+    /// Commit to attach findings to (default: HEAD).
+    #[arg(value_name = "COMMIT", default_value = "HEAD")]
+    pub commit: String,
+
+    /// Output format for findings.
+    #[arg(long, value_enum, default_value_t = FormatArg::Json)]
+    pub format: FormatArg,
+
+    /// Read findings from stdin instead of running checks.
+    #[arg(long)]
+    pub from_stdin: bool,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct ShowArgs {
+    /// Commit to read findings from (default: HEAD).
+    #[arg(value_name = "COMMIT", default_value = "HEAD")]
+    pub commit: String,
+
+    /// Output format for findings.
+    #[arg(long, value_enum, default_value_t = FormatArg::Human)]
+    pub format: FormatArg,
 }

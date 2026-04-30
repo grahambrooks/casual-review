@@ -1,5 +1,5 @@
 use anyhow::Context;
-use casual_review::cli::{CheckArgs, Cli, Command, ExplainArgs, FormatArg};
+use casual_review::cli::{CheckArgs, Cli, Command, ExplainArgs, FormatArg, PublishArgs, ShowArgs};
 use casual_review::diagnostic::Severity;
 use casual_review::engine::{run_diff, run_paths, run_repo, EngineOutput};
 use casual_review::git::DiffSpec;
@@ -25,6 +25,20 @@ fn main() -> ExitCode {
             }
         },
         Command::Explain(args) => run_explain(args),
+        Command::Publish(args) => match run_publish(args) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
+        Command::Show(args) => match run_show(args) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e:#}");
+                ExitCode::from(2)
+            }
+        },
     }
 }
 
@@ -152,4 +166,18 @@ fn emit_zero_files_hint(mode: &Mode) {
         }
         Mode::Paths => {}
     }
+}
+
+fn run_publish(_args: PublishArgs) -> anyhow::Result<()> {
+    // TODO: Implement git notes publishing
+    // For now, just print a placeholder
+    println!("cr publish: feature not yet implemented");
+    Ok(())
+}
+
+fn run_show(_args: ShowArgs) -> anyhow::Result<()> {
+    // TODO: Implement git notes reading
+    // For now, just print a placeholder
+    println!("cr show: feature not yet implemented");
+    Ok(())
 }
