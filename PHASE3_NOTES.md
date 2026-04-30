@@ -71,47 +71,64 @@ Comprehensive test coverage in `tests/phase3_findings.rs`:
 
 All tests passing (4 new tests added to test suite).
 
-## Known Limitations (MVP)
+## Known Limitations (Phase 3 MVP)
 
-### 1. File-Based Storage (Not Git Refs)
+### 1. Git Notes Storage (✓ Complete — Phase 3.1)
 
-**Current Implementation:** Findings are stored in `.cr-findings/` directory with timestamped JSON files.
-
-```
-.cr-findings/
-├── findings-1777518223.json
-├── findings-1777518330.json
-└── findings-9999999999.json
-```
-
-**Why:** Simpler implementation for MVP, still compatible with git (can be excluded via .gitignore).
-
-**Limitation:** Findings don't actually persist in git refs, so they won't survive `clone` without special handling.
-
-**Migration Path:** See "Phase 3.1 - Git Refs Integration" below.
-
-### 2. Single Findings File Per Commit
-
-When multiple `cr publish` or `cr ack` commands are run, new files are created instead of updating a single ref.
-
-**Why:** Avoids complex ref mutations for MVP.
-
-**Impact:** `cr show` reads the most recent file by parsing timestamps from filenames.
-
-**Solution:** Will be fixed by git refs implementation.
-
-### 3. Fetch/Push Commands are Stubs
-
-Currently, `cr fetch` and `cr push` use git directly but won't do anything useful until findings are in git refs:
+**Current Implementation:** Findings are stored in `refs/notes/casual-review` via git notes command.
 
 ```bash
-cr fetch origin  # Runs: git fetch origin refs/notes/casual-review:refs/notes/casual-review
-                 # But fails if refs/notes/casual-review doesn't exist yet
+git notes --ref casual-review show <commit>
+# Output: JSON payload with findings array
 ```
 
-**Why:** Prepared the CLI surface before implementing the underlying mechanism.
+**Why:** Persists with the repo in .git/refs/notes/casual-review, survives clone/push/pull operations.
 
-**Next:** Will work correctly once git refs backend is ready.
+**Benefits:**
+- Findings are part of the git object database
+- `cr fetch/push` now sync findings across repositories
+- Single authoritative note per commit (no timestamp files)
+- Compatible with git tooling and collaborative workflows
+
+**Fallback:** If git repo is unavailable (non-git directory), findings gracefully fall back to file-based storage in `.cr-findings/` for compatibility and testing.
+
+### 2. Single Authoritative Note Per Commit (✓ Complete)
+
+When `cr publish` or `cr ack` commands run, the note is updated atomically via `git notes add -f`.
+
+**Why:** Git notes reference ensures only one set of findings per commit, no need for timestamp-based file selection.
+
+**Impact:** `cr show` reads directly from `git notes --ref casual-review show <commit>`, guaranteed single source of truth.
+
+**Semantics:** Multiple `cr ack` calls append dismissal entries to the same JSON findings array (not separate files).
+
+### 3. Fetch/Push Commands (✓ Complete)
+
+`cr fetch` and `cr push` are full wrappers around git operations:
+
+```bash
+cr fetch origin   # Runs: git fetch origin refs/notes/casual-review:refs/notes/casual-review
+cr push origin    # Runs: git push origin refs/notes/casual-review:refs/notes/casual-review
+```
+
+**Why:** Keeps findings in sync with main code branches when developers collaborate.
+
+**Workflow:**
+```bash
+# Developer A publishes findings
+cr publish HEAD
+git push origin refs/notes/casual-review:refs/notes/casual-review
+
+# Developer B fetches findings
+cr fetch origin
+cr show HEAD  # Shows findings from Developer A
+
+# Developer B dismisses a finding
+cr ack CR-12345678 "Fixed in my PR"
+git push origin refs/notes/casual-review:refs/notes/casual-review
+```
+
+**Impact:** Findings are now truly collaborative — they travel through the normal git workflow.
 
 ### 4. No Configuration for Finding Suppression
 
@@ -185,60 +202,46 @@ cr ack CR-nonexistent
 3. **Dismissal model:** Append instead of delete, enabling audit trail like git-appraise
 4. **Config scope:** Suppression config applies at analysis time, not persistence time (two separate concerns)
 
-## Phase 3.1 - Git Refs Integration (Future)
+## Phase 3.1 - Git Refs Integration (✓ COMPLETE)
 
-When ready to complete Phase 3, implement proper git notes backend:
+Git notes backend is now fully implemented and tested.
 
-### 1. Replace File-Based Storage
+### Implementation Summary
 
-```rust
-// In src/git_notes.rs
-pub fn write_notes(repo_path: &Path, commit: &str, payload: NotesPayload) -> anyhow::Result<()> {
-    let repo = git2::Repository::open(repo_path)?;
-    let commit_obj = repo.revparse_single(commit)?;
-    
-    // Serialize payload to JSON
-    let json = serde_json::to_string(&payload)?;
-    
-    // Write to refs/notes/casual-review
-    let mut notes = repo.note_commits(&git2::Signature::now("cr", "cr@example.com")?)?;
-    notes.create(&commit_obj, Some("casual-review"), &json.into_bytes(), false)?;
-    
-    Ok(())
-}
-```
+- **Backend:** `src/git_notes.rs` uses `git notes` CLI command for read/write
+- **Storage:** `refs/notes/casual-review` in `.git/refs/notes/` directory
+- **Fallback:** File-based storage in `.cr-findings/` when git unavailable (e.g., non-git repo, testing)
+- **Commands:** `publish`, `show`, `ack`, `fetch`, `push` all functional
+- **Tests:** 5 unit tests + integration tests, all passing
 
-### 2. Benefits
+### Architecture
 
-- Findings persist in `.git/refs/notes/casual-review` (part of git repo)
-- `cr fetch/push` will actually sync findings across repos
-- Single authoritative note per commit (no timestamp files)
-- Compatible with `git fetch/push` for collaboration
+**Read Flow:**
+1. Try `git notes --ref casual-review show <commit>`
+2. If it fails or not a git repo, fall back to `.cr-findings/` files
 
-### 3. Implementation Checklist
+**Write Flow:**
+1. Try `git notes --ref casual-review add -f -F - <commit>` with JSON on stdin
+2. If it fails, write to `.cr-findings/` directory
 
-- [ ] Replace `write_notes` with git2 implementation
-- [ ] Replace `read_notes` with git2 implementation
-- [ ] Add proper error handling for missing commits
-- [ ] Update tests to verify git refs are created
-- [ ] Test full workflow: publish → clone → fetch → show
-- [ ] Document git notes ref structure
-- [ ] Migration guide for existing file-based findings
+**Benefits:**
+- Findings persist in git object database (survive clone/push/pull)
+- Single authoritative note per commit (atomically updated)
+- Compatible with git tooling and CI systems
+- Graceful degradation for non-git environments
 
-### 4. Expected Workflow After Migration
+### Verification
 
-```bash
-# Developer A
-cr publish HEAD
-git push origin refs/notes/casual-review:refs/notes/casual-review
+✅ End-to-end workflow tested:
+- Created repo A with findings
+- Cloned to repo B
+- Fetched findings in repo B from repo A
+- Modified findings with `ack`
+- Verified audit trail (original finding + dismissal)
 
-# Developer B
-git clone <repo>
-cr fetch origin
-cr show HEAD  # Shows findings from Developer A
-cr ack CR-12345678 "Fixed in my PR"
-git push origin refs/notes/casual-review:refs/notes/casual-review
-```
+### Remaining Phase 3 Work
+
+None — Phase 3 MVP is complete. Per PLAN.md section 10.4, `--format agent` is deferred until real agent consumption patterns emerge.
 
 ## Known Issues
 
