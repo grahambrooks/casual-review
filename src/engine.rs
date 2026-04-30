@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::diagnostic::Diagnostic;
 use crate::git::{self, ChangedFile, DiffSpec};
 use crate::parse::{self, Language};
@@ -15,6 +16,8 @@ pub struct EngineOutput {
 }
 
 pub fn run_paths(paths: &[PathBuf]) -> anyhow::Result<EngineOutput> {
+    let config = Config::load(std::path::Path::new(".")).ok().flatten();
+
     let inputs: Vec<FileInput> = paths
         .iter()
         .filter_map(|p| {
@@ -27,10 +30,12 @@ pub fn run_paths(paths: &[PathBuf]) -> anyhow::Result<EngineOutput> {
             })
         })
         .collect();
-    process(inputs)
+    process(inputs, config.as_ref())
 }
 
 pub fn run_diff(repo_root: &Path, spec: DiffSpec, all: bool) -> anyhow::Result<EngineOutput> {
+    let config = Config::load(repo_root).ok().flatten();
+
     let changed = git::changed_files(repo_root, &spec)?;
     let inputs = changed
         .into_iter()
@@ -49,13 +54,15 @@ pub fn run_diff(repo_root: &Path, spec: DiffSpec, all: bool) -> anyhow::Result<E
             })
         })
         .collect();
-    process(inputs)
+    process(inputs, config.as_ref())
 }
 
 pub fn run_repo(roots: &[PathBuf]) -> anyhow::Result<EngineOutput> {
     if roots.is_empty() {
         anyhow::bail!("run_repo requires at least one root");
     }
+
+    let config = Config::load(&roots[0]).ok().flatten();
 
     let mut builder = WalkBuilder::new(&roots[0]);
     for extra in &roots[1..] {
@@ -90,7 +97,7 @@ pub fn run_repo(roots: &[PathBuf]) -> anyhow::Result<EngineOutput> {
             })
         })
         .collect();
-    process(inputs)
+    process(inputs, config.as_ref())
 }
 
 struct FileInput {
@@ -100,7 +107,7 @@ struct FileInput {
     changed_lines: Option<Vec<Range<u32>>>,
 }
 
-fn process(inputs: Vec<FileInput>) -> anyhow::Result<EngineOutput> {
+fn process(inputs: Vec<FileInput>, config: Option<&Config>) -> anyhow::Result<EngineOutput> {
     let rules = default_rules();
 
     let per_file: Vec<(PathBuf, String, Vec<Diagnostic>)> = inputs
@@ -128,12 +135,24 @@ fn process(inputs: Vec<FileInput>) -> anyhow::Result<EngineOutput> {
                 changed_lines: changed_lines_slice,
                 old_source: old_source.as_deref(),
                 old_tree: old_tree.as_ref(),
+                config,
             };
 
             let mut diagnostics = Vec::new();
-            for rule in &rules {
-                diagnostics.extend(rule.run(&ctx));
+
+            // Check if path should be suppressed
+            let path_suppressed = config.is_some_and(|cfg| cfg.should_suppress_path(&input.path));
+
+            if !path_suppressed {
+                for rule in &rules {
+                    // Check if rule is enabled
+                    if config.is_some_and(|cfg| !cfg.is_rule_enabled(rule.id())) {
+                        continue;
+                    }
+                    diagnostics.extend(rule.run(&ctx));
+                }
             }
+
             Some((input.path, source, diagnostics))
         })
         .collect();

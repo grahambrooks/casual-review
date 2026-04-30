@@ -75,6 +75,7 @@ fn bench_rules_only(c: &mut Criterion) {
                 changed_lines: None,
                 old_source: None,
                 old_tree: None,
+                config: None,
             };
             let mut total = Vec::new();
             for rule in &rules {

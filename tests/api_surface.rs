@@ -17,6 +17,7 @@ fn run_diff(language: Language, file_name: &str, old: &str, new: &str) -> Vec<Di
         changed_lines: None,
         old_source: Some(old),
         old_tree: Some(&old_tree),
+        config: None,
     };
 
     ApiSurfaceChangeRule.run(&ctx)

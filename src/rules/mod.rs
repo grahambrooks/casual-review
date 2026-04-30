@@ -23,6 +23,7 @@ pub mod api_surface_change;
 // Shared helpers used across rules.
 pub(crate) mod util;
 
+use crate::config::Config;
 use crate::diagnostic::Diagnostic;
 use crate::parse::Language;
 use std::ops::Range;
@@ -37,6 +38,7 @@ pub struct RuleCtx<'a> {
     pub changed_lines: Option<&'a [Range<u32>]>,
     pub old_source: Option<&'a str>,
     pub old_tree: Option<&'a Tree>,
+    pub config: Option<&'a Config>,
 }
 
 impl<'a> RuleCtx<'a> {
