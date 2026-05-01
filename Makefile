@@ -2,6 +2,13 @@ CARGO ?= cargo
 BIN := target/release/cr
 CURRENT := $(shell awk -F'"' '/^version = / {print $$2; exit}' Cargo.toml)
 
+VSCODE_DIR := extensions/vscode
+JETBRAINS_DIR := extensions/jetbrains
+ZED_DIR := extensions/zed
+ZED_WASM_TARGET := wasm32-wasip1
+EXT_OUT := target/extensions
+GRADLEW := ./gradlew --no-daemon
+
 .DEFAULT_GOAL := help
 
 .PHONY: help
@@ -72,6 +79,44 @@ snapshots-review: ## Interactively review pending insta snapshots
 .PHONY: snapshots-accept
 snapshots-accept: ## Accept all pending insta snapshots (use with care)
 	$(CARGO) insta accept
+
+# ---------------------------------------------------------------------------
+# Editor extensions
+# ---------------------------------------------------------------------------
+
+.PHONY: ext-vscode
+ext-vscode: ## Compile the VS Code extension (extensions/vscode/out/)
+	cd $(VSCODE_DIR) && npm install --no-audit --no-fund && npm run compile
+
+.PHONY: ext-vscode-package
+ext-vscode-package: ext-vscode ## Package the VS Code extension as a .vsix in target/extensions/
+	@mkdir -p $(EXT_OUT)
+	cd $(VSCODE_DIR) && npx --yes @vscode/vsce@latest package \
+		--no-dependencies \
+		--out ../../$(EXT_OUT)/
+
+.PHONY: ext-jetbrains
+ext-jetbrains: ## Build the JetBrains plugin .zip
+	cd $(JETBRAINS_DIR) && $(GRADLEW) buildPlugin
+	@mkdir -p $(EXT_OUT)
+	@cp $(JETBRAINS_DIR)/build/distributions/*.zip $(EXT_OUT)/ 2>/dev/null || true
+
+.PHONY: ext-zed
+ext-zed: ## Build the Zed extension (wasm32-wasip1)
+	rustup target add $(ZED_WASM_TARGET) >/dev/null 2>&1 || true
+	cd $(ZED_DIR) && $(CARGO) build --release --target $(ZED_WASM_TARGET)
+	@mkdir -p $(EXT_OUT)
+	@cp $(ZED_DIR)/target/$(ZED_WASM_TARGET)/release/casual_review_zed.wasm $(EXT_OUT)/ 2>/dev/null || true
+
+.PHONY: extensions
+extensions: ext-vscode ext-jetbrains ext-zed ## Build all editor extensions
+
+.PHONY: clean-extensions
+clean-extensions: ## Remove extension build artifacts (out/, build/, node_modules/, zed target/)
+	rm -rf $(VSCODE_DIR)/out $(VSCODE_DIR)/node_modules
+	-cd $(JETBRAINS_DIR) && $(GRADLEW) clean
+	rm -rf $(ZED_DIR)/target
+	rm -rf $(EXT_OUT)
 
 # ---------------------------------------------------------------------------
 # Self-evaluation

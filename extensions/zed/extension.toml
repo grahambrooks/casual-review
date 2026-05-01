@@ -1,0 +1,35 @@
+id = "casual-review"
+name = "Casual Review"
+description = "Slash commands for the casual-review code-review CLI."
+version = "0.1.0"
+schema_version = 1
+authors = ["casual-review"]
+repository = "https://github.com/grahambrooks/casual-review"
+
+[slash_commands.cr-help]
+description = "Print the cr comment command reference"
+requires_argument = false
+
+[slash_commands.cr-list]
+description = "Render `cr comment list` for the current commit"
+requires_argument = false
+
+[slash_commands.cr-add]
+description = "Compose: cr comment add <file>:<lines> <body…>"
+requires_argument = true
+
+[slash_commands.cr-reply]
+description = "Compose: cr comment reply <id> <body…>"
+requires_argument = true
+
+[slash_commands.cr-resolve]
+description = "Compose: cr comment resolve <id> [<message…>]"
+requires_argument = true
+
+[slash_commands.cr-sync]
+description = "Render `cr fetch` + `cr push` for the configured remote"
+requires_argument = false
+
+[slash_commands.cr-status]
+description = "Read .cr-comments/ fallback files (file-storage mode only)"
+requires_argument = false

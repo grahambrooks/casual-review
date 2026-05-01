@@ -48,3 +48,62 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-targets -- -D warnings
+
+  ext-vscode:
+    name: ext-vscode (compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extensions/vscode/package-lock.json
+      - name: npm ci
+        working-directory: extensions/vscode
+        run: npm ci --no-audit --no-fund
+      - name: tsc compile
+        working-directory: extensions/vscode
+        run: npm run compile
+
+  ext-jetbrains:
+    name: ext-jetbrains (buildPlugin)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: gradlew buildPlugin
+        working-directory: extensions/jetbrains
+        run: ./gradlew --no-daemon buildPlugin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jetbrains-plugin-${{ github.sha }}
+          path: extensions/jetbrains/build/distributions/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  ext-zed:
+    name: ext-zed (wasm32-wasip1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: extensions/zed
+          key: zed-ext
+      - name: cargo build --release --target wasm32-wasip1
+        working-directory: extensions/zed
+        run: cargo build --release --target wasm32-wasip1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zed-extension-${{ github.sha }}
+          path: extensions/zed/target/wasm32-wasip1/release/casual_review_zed.wasm
+          if-no-files-found: error
+          retention-days: 14

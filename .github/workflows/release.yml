@@ -86,6 +86,129 @@ jobs:
           checksum: sha256
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  ext-vscode:
+    name: package vscode extension
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extensions/vscode/package-lock.json
+
+      - name: Sync extension version to tag
+        working-directory: extensions/vscode
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          node -e "const p=require('./package.json'); p.version='${version}'; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2)+'\n')"
+          echo "package.json version is now ${version}"
+
+      - name: npm ci
+        working-directory: extensions/vscode
+        run: npm ci --no-audit --no-fund
+
+      - name: Compile + package .vsix
+        working-directory: extensions/vscode
+        run: |
+          set -euo pipefail
+          npm run compile
+          version="${GITHUB_REF_NAME#v}"
+          npx --yes @vscode/vsce@latest package \
+            --no-dependencies \
+            --out "casual-review-${version}.vsix"
+
+      - name: Upload .vsix to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          gh release upload "${GITHUB_REF_NAME}" \
+            "extensions/vscode/casual-review-${version}.vsix" \
+            --clobber
+
+  ext-jetbrains:
+    name: package jetbrains plugin
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Sync plugin version to tag
+        working-directory: extensions/jetbrains
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          # Replace the version assignment in build.gradle.kts.
+          sed -i "s/^version = \"[^\"]*\"/version = \"${version}\"/" build.gradle.kts
+          grep '^version = ' build.gradle.kts
+
+      - name: gradlew buildPlugin
+        working-directory: extensions/jetbrains
+        run: ./gradlew --no-daemon buildPlugin
+
+      - name: Upload .zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          src="extensions/jetbrains/build/distributions/casual-review-jetbrains-${version}.zip"
+          ls -la "$(dirname "$src")"
+          gh release upload "${GITHUB_REF_NAME}" "$src" --clobber
+
+  ext-zed:
+    name: package zed extension
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: extensions/zed
+          key: zed-ext-release
+
+      - name: Sync extension version to tag
+        working-directory: extensions/zed
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = \"[^\"]*\"/version = \"${version}\"/" extension.toml
+          sed -i "s/^version = \"[^\"]*\"/version = \"${version}\"/" Cargo.toml
+          grep '^version = ' extension.toml Cargo.toml
+
+      - name: cargo build --release --target wasm32-wasip1
+        working-directory: extensions/zed
+        run: cargo build --release --target wasm32-wasip1
+
+      - name: Upload .wasm to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          src="extensions/zed/target/wasm32-wasip1/release/casual_review_zed.wasm"
+          dst="casual-review-zed-${version}.wasm"
+          cp "$src" "$dst"
+          gh release upload "${GITHUB_REF_NAME}" "$dst" --clobber
+
   update-formula:
     name: update homebrew formula
     needs: build
