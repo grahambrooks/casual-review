@@ -1,0 +1,93 @@
+<idea-plugin>
+    <id>com.casualreview.jetbrains</id>
+    <name>Casual Review</name>
+    <vendor email="" url="https://github.com/grahambrooks/casual-review">casual-review</vendor>
+    <description><![CDATA[
+        Read, write, and sync code-review comments stored in git notes via the
+        <code>cr</code> CLI. Thin client: every action shells out to <code>cr</code>;
+        no daemon, no LSP. Set <em>casual-review.binPath</em> in
+        <em>Settings | Tools | Casual Review</em> if <code>cr</code> is not on
+        the IDE's PATH.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService
+            serviceImplementation="com.casualreview.CrSettings"/>
+        <projectService
+            serviceImplementation="com.casualreview.CrService"/>
+
+        <projectConfigurable
+            parentId="tools"
+            instance="com.casualreview.CrConfigurable"
+            id="com.casualreview.settings"
+            displayName="Casual Review"/>
+
+        <statusBarWidgetFactory
+            id="com.casualreview.statusbar"
+            implementation="com.casualreview.CrStatusBarWidgetFactory"
+            order="last"/>
+
+        <postStartupActivity
+            implementation="com.casualreview.CrStartupActivity"/>
+
+        <notificationGroup
+            id="Casual Review"
+            displayType="BALLOON"/>
+
+        <toolWindow
+            id="Casual Review"
+            anchor="right"
+            secondary="true"
+            canCloseContents="false"
+            factoryClass="com.casualreview.CrToolWindowFactory"/>
+    </extensions>
+
+    <actions>
+        <group id="CasualReview.MainGroup" text="Casual Review" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="CasualReview.AddComment"
+                    class="com.casualreview.actions.AddCommentAction"
+                    text="Add Comment on Selection"
+                    description="Anchor a new comment to the current selection"/>
+            <action id="CasualReview.Reply"
+                    class="com.casualreview.actions.ReplyAction"
+                    text="Reply to Comment..."
+                    description="Reply to an existing comment"/>
+            <action id="CasualReview.Resolve"
+                    class="com.casualreview.actions.ResolveAction"
+                    text="Resolve Comment..."
+                    description="Mark a comment thread resolved"/>
+            <separator/>
+            <action id="CasualReview.Refresh"
+                    class="com.casualreview.actions.RefreshAction"
+                    text="Refresh Comments"
+                    description="Re-run cr comment list and redraw decorations"/>
+            <action id="CasualReview.Sync"
+                    class="com.casualreview.actions.SyncAction"
+                    text="Sync (Fetch + Push)"
+                    description="cr fetch then cr push for findings + comments"/>
+            <action id="CasualReview.Fetch"
+                    class="com.casualreview.actions.FetchAction"
+                    text="Fetch"
+                    description="cr fetch the configured remote"/>
+            <action id="CasualReview.Push"
+                    class="com.casualreview.actions.PushAction"
+                    text="Push"
+                    description="cr push to the configured remote"/>
+            <separator/>
+            <action id="CasualReview.ShowStale"
+                    class="com.casualreview.actions.ShowStaleAction"
+                    text="Show Stale Comments"
+                    description="List comments whose anchor bytes have drifted"/>
+        </group>
+
+        <action id="CasualReview.AddCommentEditor"
+                class="com.casualreview.actions.AddCommentAction"
+                text="Casual Review: Add Comment on Selection">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

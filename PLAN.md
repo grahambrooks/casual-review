@@ -605,7 +605,8 @@ A later `cr bridge github push <PR>` mirrors comments to PR review threads via t
 | **Phase 2 — CI-grade** | SARIF output, `--format github`, two more languages (TypeScript + Go), `casual-review.toml` config, benchmark suite, `--all` and `--changed-only` modes | Adopted in at least one real repo's CI; SARIF appears in GitHub code scanning UI |
 | **Phase 3 — Substrate** | `cr publish`/`show`/`fetch`/`push` against `refs/notes/casual-review`, JSON schema v1 frozen, threaded ack/dismiss, agent-format output if justified | Findings round-trip through clone+push+pull; one external user has consumed them |
 | **Phase 4 — Collaboration** | Ref split, `casual-review/comment/1` schema, `cr comment` subcommands, anchoring/staleness, VS Code extension, optional forge bridge | Two developers leave and reply to comments end-to-end from VS Code via the git remote |
-| **Phase 5+** | WASM rules, LSP server, `cr fix`, additional languages on demand, JetBrains/Neovim extensions | Driven by real demand, not by this plan |
+| **Phase 4 add-on — JetBrains plugin** | `extensions/jetbrains/`: project service, gutter highlighters, actions, status bar widget. Same JSON contract as the VS Code extension. | Builds via `./gradlew buildPlugin` (Kotlin 2.2 / Gradle 9 / IntelliJ Platform Gradle Plugin 2.6, IDE 2024.2 baseline). |
+| **Phase 5+** | WASM rules, LSP server, `cr fix`, additional languages on demand, Neovim extension | Driven by real demand, not by this plan |
 
 ---
 
