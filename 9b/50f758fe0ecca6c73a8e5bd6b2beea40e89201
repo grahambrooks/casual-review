@@ -1,0 +1,38 @@
+.github/workflows/ci.yml
+  ca9ff5093bcbbeb8 51-109
+extensions/zed/Cargo.toml
+  ca9ff5093bcbbeb8 1-17
+extensions/zed/extension.toml
+  ca9ff5093bcbbeb8 1-35
+Makefile
+  ca9ff5093bcbbeb8 5-11,83-120
+extensions/zed/src/lib.rs
+  ca9ff5093bcbbeb8 1-218
+extensions/zed/.gitignore
+  ca9ff5093bcbbeb8 1-3
+.github/workflows/release.yml
+  ca9ff5093bcbbeb8 89-211
+extensions/zed/README.md
+  ca9ff5093bcbbeb8 1-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "9b50f758fe0ecca6c73a8e5bd6b2beea40e89201",
+  "prompts": {
+    "ca9ff5093bcbbeb8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fd43cf6f-4aab-4e5f-9a29-0aed3ad1bb84",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 871,
+      "total_deletions": 319,
+      "accepted_lines": 3207,
+      "overriden_lines": 1,
+      "messages_url": "https://usegitai.com/cas/9bd728a58c85e181bf066f9acb1d08fe71dbe81013399414519ed861695ae2de"
+    }
+  }
+}
