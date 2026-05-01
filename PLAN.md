@@ -473,6 +473,130 @@ The four-to-six real decisions, surfaced explicitly:
 
 ---
 
+## 11. Collaborative comments — Phase 4
+
+A natural extension of Phase 3's substrate: human-authored review comments that travel through git the same way findings do. The premise is unchanged — git is the transport, not a sidecar — but the producer is a person (or an editor on their behalf) instead of a rule. The first surfacing client is a VS Code extension; everything below is editor-agnostic, with the extension as a thin shell over the CLI.
+
+### Goal
+
+Two developers with `cr` installed can leave threaded comments on lines, files, or commits of any reachable commit, sync them via `git fetch/push`, and view/reply from inside their editor. Forge integration (mirror to GitHub/GitLab PR threads) is an optional later bridge, not a dependency.
+
+### Substrate
+
+Section 6 already anticipated this: "split into sub-refs only if the second kind appears." That moment is here.
+
+- **Findings ref** migrates from `refs/notes/casual-review` → `refs/notes/casual-review/findings`. Schema unchanged.
+- **Comments ref** is new: `refs/notes/casual-review/discuss`, schema `casual-review/comment/1`.
+
+Why split: lifecycle differs (findings are regenerable from rules; comments are not), and authoring rate differs (comments may be high-frequency during active review while findings are republished in batch). One ref per kind keeps fetch/push semantics clean and avoids forcing every consumer to filter a union schema.
+
+Migration: a one-shot `cr migrate-refs` (also run lazily on first Phase 4 command) does `git update-ref refs/notes/casual-review/findings refs/notes/casual-review` and deletes the old ref. Phase 3 is fresh enough that the cost is low; the long-term shape is worth it.
+
+### Comment schema
+
+```json
+{
+  "schema": "casual-review/comment/1",
+  "tool": "casual-review",
+  "tool_version": "0.x.y",
+  "commit": "abc123...",
+  "comments": [
+    {
+      "id": "CRC-<hash>",
+      "author": { "name": "Graham Brooks", "email": "graham@..." },
+      "created_at": "2026-04-30T12:00:00Z",
+      "anchor": {
+        "file": "src/lib.rs",
+        "line_range": [42, 44],
+        "byte_range": [1024, 1098],
+        "anchor_text_sha": "<sha256 of the anchored bytes>"
+      },
+      "body": "Why does this allocate?",
+      "parent": null,
+      "resolved": false,
+      "resolved_by": null,
+      "resolved_at": null
+    }
+  ]
+}
+```
+
+Notes on the shape:
+
+- **`anchor.anchor_text_sha`** is the staleness primitive. When rendering a comment, hash the current bytes at the anchor's `byte_range`; if it differs from `anchor_text_sha`, the comment is *stale* — still shown, but flagged.
+- **`parent`** threads replies, exactly like findings dismissals. A reply is a comment whose `parent` is another comment's `id`.
+- **`resolved`** is a soft state, set by appending a new comment record with `parent: <original_id>` and `resolved: true` (append-only, audit-trail preserving — same model as `cr ack`). Records are never mutated.
+- **`author`** is read from `git config user.name`/`user.email`. No new identity system in v1; commits already carry these values, so reusing them is consistent.
+- **File-level comments** use `line_range: [0, 0]`. **Commit-level comments** omit `anchor.file`.
+- **`id`** is a stable hash of `(author.email, created_at, anchor, body)` — deterministic enough to dedupe across re-fetches without needing UUIDs.
+
+### CLI surface
+
+```
+cr comment add <FILE> --lines <START[:END]> [--body <TEXT>] [--commit HEAD]
+cr comment add <FILE> --file-level [--body <TEXT>] [--commit HEAD]
+cr comment add --commit-level [--body <TEXT>] [--commit HEAD]
+cr comment list [--commit HEAD] [--file <FILE>] [--format human|json] [--include-resolved]
+cr comment reply <COMMENT_ID> [--body <TEXT>]
+cr comment resolve <COMMENT_ID> [--message <TEXT>]
+cr comment reanchor <COMMENT_ID> --lines <START[:END]>
+```
+
+If `--body` is omitted, `cr` opens `$EDITOR` (same convention as `git commit`).
+
+`cr fetch`/`cr push` sync **both** refs by default; a `--ref findings|comments|all` flag scopes when needed. Implementation is one extra refspec on the existing wrappers — no new transport code.
+
+### Anchoring across edits
+
+Comments survive small edits as long as the anchor bytes still hash equally; otherwise they fall into a "stale" bucket. The editor surfaces them in two places:
+
+1. **Inline gutter marker** when `anchor_text_sha` matches the current byte range.
+2. **Stale panel** when it does not — the developer can `reanchor` or `resolve`.
+
+We deliberately do *not* implement smart re-anchoring (3-way diff, blame walking) in v1. Flag-and-prompt is honest about the limits and avoids wrong-but-confident anchoring. Smart re-anchoring is a candidate for 4.2 if friction appears.
+
+### VS Code extension
+
+Thin by design: it shells out to `cr` and renders. No comment storage, no JSON parsing of notes refs, no git operations of its own. The binary stays the single source of truth, and the same protocol works for any editor that can spawn a subprocess.
+
+**Surface:**
+- Gutter markers on commented lines.
+- Hover/peek shows thread with a reply box.
+- Command palette: `Casual Review: Add Comment`, `Casual Review: Sync` (= `cr fetch && cr push`), `Casual Review: Show Stale`.
+- Status bar: count of unresolved comments on current commit.
+
+**Wire protocol:** plain JSON over `cr comment list --format json`. No LSP, no IPC daemon. Each editor action is one `cr` invocation; the ≤30 ms cold-start budget from section 8 keeps it responsive.
+
+**Refresh model:** the extension watches `.git/refs/notes/casual-review/discuss` (and `packed-refs` mtime) via the OS file watcher. On change, re-run `cr comment list`. No polling, no daemon.
+
+**Out of scope for the v1 extension:**
+- Authoring while offline against a teammate without `cr` installed.
+- Inline diff rendering of comment threads.
+- Authentication beyond `git` itself.
+
+### Forge bridge — 4.4 (optional)
+
+A later `cr bridge github push <PR>` mirrors comments to PR review threads via the GitHub API (and inverse for fetch). The substrate stays authoritative; the forge is a view. Gate on real demand and a clear two-way conflict story before designing.
+
+### Sub-phasing within Phase 4
+
+| Sub-phase | Scope | Exit criteria |
+|---|---|---|
+| **4.1 — comment CLI** | Ref split + migration, schema v1, `cr comment add/list/reply/resolve`, fetch/push extension | Two clones leave and read each other's comments via `cr push`/`cr fetch` |
+| **4.2 — anchoring polish** | Stale detection, `reanchor`, evaluation of smart re-anchor | Stale rate manageable on a real repo (target: <20% per week of active dev) |
+| **4.3 — VS Code extension** | Gutter, peek, sync command, refresh on save (no daemon) | Authoring and reading comments end-to-end from the editor on a real PR. Scaffolded under `extensions/vscode/`; compiles via `npm run compile`. |
+| **4.4 — forge bridge (optional)** | GitHub mirror, both directions | One real PR has comments authored in `cr` showing up on github.com |
+
+### Next decisions for section 11
+
+- **Per-comment vs per-thread `id`.** Lean per-comment; threads derive from `parent`. Mirrors findings. Decided.
+- **`cr comment add` requires a committed anchor.** Yes — same rule as `cr publish`. Comments on uncommitted work live only in the editor's transient state. Keeps the substrate honest.
+- **Default visibility of comments on ancestor commits.** When viewing `HEAD`, show comments anchored to ancestors whose `anchor_text_sha` still matches the current bytes; hide drifted ones unless `--all-commits`.
+- **Anchor identity (bytes vs. line content).** Bytes are unambiguous; line content is robust to leading-whitespace edits. Recommend bytes for v1; revisit if whitespace-only edits cause excessive staleness.
+- **Editor-agnostic protocol.** Decide early whether the JSON shape returned by `cr comment list --format json` is a stable contract. Recommend yes — it is the editor extension API, and the JetBrains/Neovim ports we want next month will pin to it.
+
+---
+
 ## Phasing summary
 
 | Phase | Scope | Exit criteria |
@@ -480,7 +604,8 @@ The four-to-six real decisions, surfaced explicitly:
 | **Phase 1 — MVP** | Workspace, diagnostic types, ariadne renderer, two languages (Rust + Python), three rules, diff-aware default, JSON output, exit codes | `cr check` on a fixture matches snapshot, runs in <200 ms, CI integration via JSON |
 | **Phase 2 — CI-grade** | SARIF output, `--format github`, two more languages (TypeScript + Go), `casual-review.toml` config, benchmark suite, `--all` and `--changed-only` modes | Adopted in at least one real repo's CI; SARIF appears in GitHub code scanning UI |
 | **Phase 3 — Substrate** | `cr publish`/`show`/`fetch`/`push` against `refs/notes/casual-review`, JSON schema v1 frozen, threaded ack/dismiss, agent-format output if justified | Findings round-trip through clone+push+pull; one external user has consumed them |
-| **Phase 4+** | WASM rules, LSP server, `cr fix`, additional languages on demand | Driven by real demand, not by this plan |
+| **Phase 4 — Collaboration** | Ref split, `casual-review/comment/1` schema, `cr comment` subcommands, anchoring/staleness, VS Code extension, optional forge bridge | Two developers leave and reply to comments end-to-end from VS Code via the git remote |
+| **Phase 5+** | WASM rules, LSP server, `cr fix`, additional languages on demand, JetBrains/Neovim extensions | Driven by real demand, not by this plan |
 
 ---
 

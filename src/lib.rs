@@ -1,10 +1,13 @@
 pub mod cli;
+pub mod comments;
 pub mod config;
 pub mod diagnostic;
 pub mod engine;
 pub mod git;
+pub mod git_comments;
 pub mod git_notes;
 pub mod notes;
+pub mod notes_io;
 pub mod parse;
 pub mod render;
 pub mod rules;

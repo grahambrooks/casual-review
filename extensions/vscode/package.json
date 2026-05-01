@@ -1,0 +1,93 @@
+{
+  "name": "casual-review",
+  "displayName": "Casual Review",
+  "description": "Read, write, and sync code-review comments stored in git notes via the cr CLI.",
+  "version": "0.1.0",
+  "publisher": "casual-review",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grahambrooks/casual-review"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "casualReview.addComment",
+        "title": "Casual Review: Add Comment on Selection"
+      },
+      {
+        "command": "casualReview.replyToComment",
+        "title": "Casual Review: Reply to Comment"
+      },
+      {
+        "command": "casualReview.resolveComment",
+        "title": "Casual Review: Resolve Comment"
+      },
+      {
+        "command": "casualReview.sync",
+        "title": "Casual Review: Sync (fetch + push)"
+      },
+      {
+        "command": "casualReview.fetch",
+        "title": "Casual Review: Fetch"
+      },
+      {
+        "command": "casualReview.push",
+        "title": "Casual Review: Push"
+      },
+      {
+        "command": "casualReview.refresh",
+        "title": "Casual Review: Refresh Comments"
+      },
+      {
+        "command": "casualReview.showStale",
+        "title": "Casual Review: Show Stale Comments"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "casualReview.addComment",
+          "group": "casualReview@1",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Casual Review",
+      "properties": {
+        "casualReview.binPath": {
+          "type": "string",
+          "default": "cr",
+          "description": "Path to the cr binary. Use an absolute path if cr is not on PATH for the VS Code process."
+        },
+        "casualReview.includeAncestors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Project comments from ancestor commits onto HEAD."
+        },
+        "casualReview.remote": {
+          "type": "string",
+          "default": "origin",
+          "description": "Default remote for sync/fetch/push."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
