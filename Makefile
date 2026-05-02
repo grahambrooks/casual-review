@@ -119,6 +119,54 @@ clean-extensions: ## Remove extension build artifacts (out/, build/, node_module
 	rm -rf $(EXT_OUT)
 
 # ---------------------------------------------------------------------------
+# Run editor extensions for user testing
+# ---------------------------------------------------------------------------
+# Each target launches an editor session with the in-tree extension loaded.
+# The extensions shell out to `cr`, so make sure `cr` is on $$PATH first
+# (e.g. via `make install`).
+#
+# EXT_RUN_DIR overrides the folder the editor opens. Defaults to the
+# casual-review repo itself so you can dogfood comments end-to-end.
+
+EXT_RUN_DIR ?= $(CURDIR)
+
+.PHONY: ext-run
+ext-run: ## List the per-editor run targets
+	@echo "Editor extensions — one session each ('cr' must be on PATH):"
+	@echo "    make ext-vscode-run     — VS Code with the dev extension loaded"
+	@echo "    make ext-jetbrains-run  — IntelliJ Community sandbox with the plugin"
+	@echo "    make ext-zed-run        — instructions + open Zed at the project root"
+	@echo
+	@echo "Override the folder the editor opens with EXT_RUN_DIR=/path/to/repo"
+
+.PHONY: ext-vscode-run
+ext-vscode-run: ext-vscode ## Launch VS Code with the dev extension loaded (EXT_RUN_DIR overrides folder)
+	@command -v code >/dev/null || { \
+		echo "error: 'code' CLI not on PATH"; \
+		echo "       In VS Code: Cmd-Shift-P -> Shell Command: Install 'code' command in PATH"; \
+		exit 1; \
+	}
+	code --extensionDevelopmentPath="$(CURDIR)/$(VSCODE_DIR)" "$(EXT_RUN_DIR)"
+
+.PHONY: ext-jetbrains-run
+ext-jetbrains-run: ## Launch a sandbox IntelliJ IDEA with the plugin installed (gradlew runIde)
+	cd $(JETBRAINS_DIR) && $(GRADLEW) runIde
+
+.PHONY: ext-zed-run
+ext-zed-run: ## Print Zed dev-extension install instructions; open Zed at EXT_RUN_DIR if available
+	@echo "Zed has no CLI command for installing dev extensions. Steps:"
+	@echo "  1. Open Zed."
+	@echo "  2. Cmd-Shift-X (Extensions panel) -> 'Install Dev Extension'."
+	@echo "  3. Select: $(CURDIR)/$(ZED_DIR)"
+	@echo
+	@if command -v zed >/dev/null; then \
+		echo "Opening Zed at $(EXT_RUN_DIR) ..."; \
+		zed "$(EXT_RUN_DIR)"; \
+	else \
+		echo "(zed CLI not on PATH; open Zed manually after installing.)"; \
+	fi
+
+# ---------------------------------------------------------------------------
 # Self-evaluation
 # ---------------------------------------------------------------------------
 
