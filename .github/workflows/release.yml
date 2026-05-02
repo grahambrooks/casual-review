@@ -132,6 +132,42 @@ jobs:
             "extensions/vscode/casual-review-${version}.vsix" \
             --clobber
 
+      # Marketplace publishing is gated on secrets being set. Until the
+      # publisher account exists and a PAT is added, these steps no-op so
+      # the workflow stays green on each tag push.
+      - name: Publish to VS Code Marketplace
+        working-directory: extensions/vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VSCE_PAT:-}" ]; then
+            echo "VSCE_PAT not set — skipping VS Code Marketplace publish."
+            echo "To enable: register publisher 'casual-review' at"
+            echo "https://marketplace.visualstudio.com/manage and add a PAT"
+            echo "as repository secret VSCE_PAT."
+            exit 0
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          npx --yes @vscode/vsce@latest publish \
+            --no-dependencies \
+            --packagePath "casual-review-${version}.vsix"
+
+      - name: Publish to Open VSX
+        working-directory: extensions/vscode
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OVSX_PAT:-}" ]; then
+            echo "OVSX_PAT not set — skipping Open VSX publish."
+            echo "To enable: create an Open VSX namespace at https://open-vsx.org"
+            echo "and add a PAT as repository secret OVSX_PAT."
+            exit 0
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          npx --yes ovsx publish "casual-review-${version}.vsix" -p "$OVSX_PAT"
+
   ext-jetbrains:
     name: package jetbrains plugin
     needs: create-release
@@ -168,6 +204,31 @@ jobs:
           src="extensions/jetbrains/build/distributions/casual-review-jetbrains-${version}.zip"
           ls -la "$(dirname "$src")"
           gh release upload "${GITHUB_REF_NAME}" "$src" --clobber
+
+      # Marketplace publish is gated on JETBRAINS_TOKEN; if missing, the
+      # GitHub release still has the .zip for manual upload. The plugin's
+      # build.gradle.kts must declare a `signing` + `publishing` block for
+      # this to work end-to-end — currently absent and left to a follow-up.
+      - name: Publish to JetBrains Marketplace
+        working-directory: extensions/jetbrains
+        env:
+          JETBRAINS_TOKEN: ${{ secrets.JETBRAINS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${JETBRAINS_TOKEN:-}" ]; then
+            echo "JETBRAINS_TOKEN not set — skipping JetBrains Marketplace publish."
+            echo "To enable: create a hub permanent token at"
+            echo "https://hub.jetbrains.com/users/me?tab=authentification and"
+            echo "add it as repository secret JETBRAINS_TOKEN."
+            exit 0
+          fi
+          if ! grep -q 'publishPlugin' build.gradle.kts; then
+            echo "build.gradle.kts has no publishPlugin task wired up — skipping."
+            echo "Add a publishing { token } block per the IntelliJ Platform"
+            echo "Gradle Plugin docs to enable Marketplace publishing."
+            exit 0
+          fi
+          ./gradlew --no-daemon publishPlugin -Ptoken="$JETBRAINS_TOKEN"
 
   ext-zed:
     name: package zed extension
@@ -208,6 +269,31 @@ jobs:
           dst="casual-review-zed-${version}.wasm"
           cp "$src" "$dst"
           gh release upload "${GITHUB_REF_NAME}" "$dst" --clobber
+
+      # Zed has no API-driven publish flow. Distribution goes through a PR
+      # to https://github.com/zed-industries/extensions referencing this
+      # repo + tag. Surface the manual step rather than silently no-op.
+      - name: Note about Zed extensions registry
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          cat <<EOF
+          Zed registry publish is manual.
+
+          For first-time publish:
+            1. Fork https://github.com/zed-industries/extensions
+            2. Add an entry under extensions/casual-review/ pointing at
+               this repo and tag v${version}.
+            3. Open a PR; track the review on that repository.
+
+          For subsequent updates:
+            1. Update the version pin in extensions/casual-review/extension.toml
+               on the fork to v${version}.
+            2. Open a PR.
+
+          The .wasm uploaded to this GitHub Release is for users installing
+          the dev extension manually; the registry rebuilds from source.
+          EOF
 
   update-formula:
     name: update homebrew formula

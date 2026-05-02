@@ -50,7 +50,7 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
 
   ext-vscode:
-    name: ext-vscode (compile)
+    name: ext-vscode (package)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -65,6 +65,21 @@ jobs:
       - name: tsc compile
         working-directory: extensions/vscode
         run: npm run compile
+      - name: Package .vsix (pre-release naming)
+        working-directory: extensions/vscode
+        run: |
+          set -euo pipefail
+          # CI builds use the package.json version verbatim; release.yml syncs
+          # it to the tag. The .vsix name picks up whatever version is set.
+          npx --yes @vscode/vsce@latest package \
+            --no-dependencies \
+            --out "casual-review-ci.vsix"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ github.sha }}
+          path: extensions/vscode/casual-review-ci.vsix
+          if-no-files-found: error
+          retention-days: 14
 
   ext-jetbrains:
     name: ext-jetbrains (buildPlugin)
