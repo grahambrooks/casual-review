@@ -216,7 +216,8 @@ verify-release: lint test ## Pre-release verification (lint + test)
 # Neither pushes — the next-step push command is printed.
 .PHONY: release
 release: ## Tag today's CalVer (YYYY.M.D), or bump+tag with VERSION=...
-	@target_version="$(VERSION)"; \
+	@set -e; \
+	target_version="$(VERSION)"; \
 	if [ -z "$$target_version" ]; then \
 		target_version=$$(python3 -c "import datetime; t=datetime.date.today(); print(f'{t.year}.{t.month}.{t.day}')"); \
 		echo "==> auto-computed version from today's date: $$target_version"; \
