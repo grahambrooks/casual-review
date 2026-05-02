@@ -42,8 +42,19 @@ test: ## Run all tests
 	$(CARGO) test
 
 .PHONY: bench
-bench: ## Run criterion benchmarks (LOC/sec)
+bench: ## Run criterion benchmarks (LOC/sec) and theme the HTML reports
 	$(CARGO) bench --bench throughput
+	@$(MAKE) --no-print-directory bench-theme
+
+.PHONY: bench-theme
+bench-theme: ## Inject prefers-color-scheme dark-mode CSS into criterion's HTML reports (idempotent)
+	@python3 scripts/theme-bench-reports.py
+
+.PHONY: bench-open
+bench-open: ## Open the criterion report dashboard in the default browser
+	@open target/criterion/report/index.html 2>/dev/null \
+		|| xdg-open target/criterion/report/index.html 2>/dev/null \
+		|| echo "open target/criterion/report/index.html in your browser"
 
 .PHONY: clean
 clean: ## Remove build artifacts
