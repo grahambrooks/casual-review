@@ -2,6 +2,20 @@
 
 A phased plan for a Rust CLI that brings rustc-quality diagnostics to other languages, runs equally well on a developer workstation and in CI, and (eventually) shares findings through Git's own substrate. Pragmatic and opinionated; uncertainty is called out where it is real.
 
+## Status snapshot — 2026-04-30
+
+Phases 1 through 4 have shipped. The plan below is preserved as the design record; the live work is now in **Phase 5** (section 12), which prioritises functional and non-functional improvements over greenfield features.
+
+| Phase | State | Notes |
+|---|---|---|
+| **1 — MVP** | ✅ shipped | 15 rules (vs planned 3), 5 languages (Rust, Python, TS, TSX, Java; vs planned 2). Diff-aware default, JSON + human renderers, exit codes. |
+| **2 — CI-grade** | ✅ shipped | SARIF, GitHub format, `.casual-review.toml` config (rule disable + path glob suppression), criterion benchmarks. *Open:* CI regression alerts on bench drift (designed in §8, not yet wired in `.github/workflows/`). Go grammar still not added. |
+| **3 — Substrate** | ✅ shipped | `cr publish/show/ack/fetch/push` against `refs/notes/casual-review`, schema `casual-review/finding/1`, threaded dismissals, file-based fallback when not in a git repo. See `PHASE3_NOTES.md`. |
+| **4 — Collaboration** | ✅ mostly shipped | Comments CLI (`cr comment add/list/reply/resolve/reanchor`), schema `casual-review/comment/1`, ref split (`/findings`, `/discuss`), staleness via `anchor_text_sha`, ancestor projection. Editor extensions: VS Code, JetBrains, **Zed** (Zed was not in the original plan). *Open:* §11 sub-phase 4.2 smart re-anchoring, sub-phase 4.4 forge bridge. |
+| **5 — Hardening & growth** | ⏳ active | See §12 for functional and non-functional priorities. |
+
+Counts at this snapshot: ~52 unit tests + 39 integration tests across `tests/`, all green. Self-eval (`make selfcheck`) currently emits ~200 warnings on the project's own `src/` — most are `commented-code` false positives on doc-comments and `debug-print` hits in legitimate CLI output paths, both called out as Phase 5 work in §12.
+
 ## 0. Guiding principles
 
 - **Cold start under 100 ms on a single file.** Anything slower stops being "casual."
@@ -597,24 +611,277 @@ A later `cr bridge github push <PR>` mirrors comments to PR review threads via t
 
 ---
 
+## 12. Phase 5 — Hardening & growth
+
+Phases 1 through 4 shipped breadth: pipeline, rules, persistence, comments, three editor extensions. Phase 5 is depth — make the surface that exists actually pleasant to use, then grow it where the cost is justified.
+
+The work splits into two threads. Functional improvements raise what `cr` can do for a user; non-functional improvements raise how reliably and unsurprisingly it does it. They run in parallel; neither is a prerequisite for the other except where called out.
+
+### 12.1 Functional improvements
+
+#### F1. Rule precision (highest priority)
+
+`make selfcheck` currently emits ~200 warnings on the project's own `src/`. The breakdown reveals where the rules misfire:
+
+- **`commented-code` (109 hits, ~80% false-positive estimate)** — Rust `///` and `//!` doc comments and TS/Java `/** */` JSDoc/Javadoc are being treated as commented-out code because they often contain code-shaped text (`fn`, `let`, parentheses). Fix: skip doc-comment node kinds before running the heuristic. Tree-sitter exposes `doc_comment` separately in Rust; in TS/TSX inspect for `/**` prefix. Add fixtures that lock the false-negative behaviour in too.
+- **`debug-print` (36 hits, mostly legitimate)** — `cr` itself is a CLI; `println!` in `src/main.rs`, `src/notes_io.rs` and similar is intentional output, not debug noise. Two complementary fixes:
+  1. **Suppression directives in source.** `// cr-allow debug-print` (next-line) and `// cr-allow-file debug-print` (whole file) — borrowed from `eslint-disable` and `clippy::allow`. Implementable as a query over comments + a span-overlap check. This is also the right answer for legitimately-flagged code that the author has consciously accepted.
+  2. **`.casual-review.toml` glob-scoped rule overrides** — already partially supported via the `suppress.paths` global list; extend to per-rule path scoping (`[rules."debug-print"]\nsuppress_paths = ["src/main.rs"]`).
+- **`unwrap-used` (19 hits)** — regex constants and post-insert `HashMap::get` are intentional. Same suppression-directive answer.
+
+**Exit criterion for F1:** `make selfcheck` produces zero warnings without disabling rules wholesale. Either the rule fixes the false positive, or the source has a justified suppression directive.
+
+#### F2. Suppression directives (`cr-allow`)
+
+Inline source pragmas, modelled on `// clippy::allow(...)` and `# noqa: E501`:
+
+```rust
+// cr-allow: debug-print  -- top-level CLI output
+println!("...");
+
+#[allow_attribute_ish] // cr-allow-next-line: unwrap-used
+let x = compile_regex().unwrap();
+```
+
+```python
+# cr-allow: debug-print
+print("...")
+```
+
+```typescript
+// cr-allow: any-type, ts-escape-hatch
+const x: any = ...; // @ts-ignore
+```
+
+Implementation outline:
+- Comment query per language → extract `cr-allow`/`cr-allow-next-line`/`cr-allow-file` directives.
+- Build a per-file suppression map keyed by `(line, rule_id)`.
+- After rule runs, filter diagnostics whose `(line, code)` is suppressed.
+- New rule: `unused-allow` — surface directives that suppressed nothing. Good citizens delete dead suppressions.
+
+Decided early: suppression takes a comma-separated rule list, not a wildcard. `cr-allow: *` is never a good idea in source.
+
+Exit criterion: every legitimate self-eval finding either disappears at the rule level (F1) or carries a `cr-allow` with a one-line justification.
+
+#### F3. `cr fix` — apply suggestions
+
+The diagnostic type already carries `suggestions: Vec<Suggestion>` with `Applicability` per rustc. What's missing is the apply path:
+
+- `cr fix` — apply all `MachineApplicable` suggestions in changed files; print a summary of what changed. Default refuses to touch unsaved buffers (working-tree diffs `cr` itself produced).
+- `cr fix --suggest <severity>` — also apply `MaybeIncorrect` suggestions, but write a `.cr-fix-backup` next to each file and require `--force` if the working tree is dirty.
+- `cr fix --apply <CR-id>` — apply one specific finding's suggestion.
+
+Most rules don't yet emit suggestions. Start with the trivially-fixable ones:
+- `trailing-whitespace` → strip
+- `todo-marker` → no auto-fix; never makes sense
+- `commented-code` → no auto-fix (we don't know if delete or restore)
+- `unwrap-used` → suggest `?` if function returns `Result`; otherwise no auto-fix
+- `any-type` → suggest `unknown` (mechanical replacement, MaybeIncorrect)
+- `ts-escape-hatch` → no auto-fix; the comment is the warning
+
+Exit criterion: `cr check && cr fix && cr check` is idempotent and leaves the tree in a state that compiles.
+
+#### F4. `--format agent`
+
+§3 designed this and §10 deferred it to "after seeing how agents actually consume `cr` output." After 6+ months of agent usage via `--format json`, the patterns are clear enough to design:
+
+- One diagnostic per record, no ANSI, fixed field order, no decorative borders.
+- Includes a one-line `code-block` field showing the offending source line(s) inline so the agent doesn't have to re-read the file.
+- Drops `byte_range` (agents don't seek by byte) and `col_*` defaults (line is enough).
+- Surfaces `helps[0]` as a prominent `fix:` field — most rules' `helps` is the actionable sentence.
+
+Compare against `--format json` (which stays the editor extension's contract — stable, fully-typed, byte-accurate) and `--format human` (ariadne, for terminals).
+
+Exit criterion: round-trip with Claude Code or similar — agent reads `--format agent`, applies fixes, re-runs, finishes with zero diagnostics on a synthetic fixture.
+
+#### F5. Smart re-anchoring (Phase 4.2 follow-through)
+
+§11 deferred this past v1 of comments behind "flag-and-prompt is honest." That stance holds for v1; the question is when it costs a real user enough friction to justify. Build the metrics first:
+
+- `cr comment list --include-stale --format json` already surfaces stale comments. Add a `--stats` flag that reports the staleness rate over a window (last 30 days of commits, say).
+- If the rate is >20% on an active repo (the §11 guess at the friction threshold), implement re-anchoring against the comment's anchor text:
+  1. Search for the original anchor text within the new file (Levenshtein-bounded).
+  2. If exactly one match, propose a re-anchor with `cr comment reanchor --auto`.
+  3. If zero or many, leave stale.
+
+The expensive option (3-way diff via blame walk) is out of scope until single-match search proves insufficient.
+
+Exit criterion: stale rate measured on at least one real repo with an active comment thread; if it crosses the threshold, re-anchor lands; if not, this stays deferred.
+
+#### F6. Phase 4.4 — forge bridge (optional)
+
+`cr bridge github push <PR>` mirrors comments to PR review threads via the GitHub API; the inverse pulls. Substrate stays authoritative; the forge is a view.
+
+Gate on: at least one user asking for it, plus a clear two-way conflict-resolution story (forge → ref or ref → forge wins on collision). Until both arrive, this stays as a sketched intent. The cost — auth, REST surface, conflict logic — is large and best paid once.
+
+#### F7. More languages — selectively
+
+The plan called for Go after TypeScript. It hasn't shipped because Java (added) was higher-leverage for Java-shop adoption and the Go grammar adds non-trivial compile time + binary size for a language `cr` doesn't yet have native rules for.
+
+Pick by demand, not by completeness:
+- **Go** — high LOC universe; mature grammar; would add another language for `unwrap-equivalent` (`if err != nil` boilerplate density is the analogue rule).
+- **JavaScript** (separate from TS) — already half-done via `tree-sitter-typescript` parse-fallback; a clean Language::JavaScript would unlock plain JS files.
+- **C / C++** — large, but grammars are mature. Holds the door open for kernel/embedded reviewers.
+- **Kotlin** — Java-shop adjacent; small incremental cost given Java is in.
+
+For each addition, the bar is one new rule that's *language-specific* enough to demonstrate value (i.e., not just `todo-marker` rebadged). Without that, the extra grammar is dead weight.
+
+#### F8. Cross-file analysis (one rule, opt-in)
+
+§9 said "no cross-file analysis in v1." That holds, but a single high-value rule is worth spiking:
+
+- `unused-public` — public symbols (Rust `pub`, TS `export`, Java `public class`) with zero references anywhere in the working tree. Diff-aware: only fires for symbols added in the diff that are also unreferenced.
+
+This requires a per-run symbol index; the cost is real (a second pass before rules run, doubling parse work in the worst case). Treat as opt-in via `--rule unused-public` for now; if the rule becomes universally desired, lift it into the default set and amortise the index across rules that want it.
+
+Decided up-front: this rule is the only cross-file rule until measurement says otherwise. `unused-import`, `unused-export`, `dead-code` all ride on the same index but are deferred — `unused-public` proves the index pays for itself first.
+
+#### F9. More rules (incremental)
+
+Filed in priority order; each is a separate small PR:
+
+1. **`long-parameter-list`** — function signatures with > 6 parameters. Universal. Sonar-style.
+2. **`magic-number`** — numeric literals not in `(-1, 0, 1, 2)` outside `const` and test code. Lots of false positives possible; needs `cr-allow` (F2) to be useful.
+3. **`identical-branches`** — `if`/`else` arms with identical bodies. Catches a real bug class.
+4. **`shotgun-surgery`** — file with > N changed regions in a single diff. Emits a *note*, not a warning — heads-up for reviewers about a sprawling change.
+5. **`returns-from-finally`** — Java/TS rule for `return` in `finally` blocks. Tiny but always a real bug.
+
+Anything past these waits for a request.
+
+#### F10. Neovim extension
+
+The §11 `cr comment` JSON contract is editor-agnostic by design. Three extensions exist (VS Code, JetBrains, Zed); a Neovim port reuses the same protocol. Estimated cost: small Lua plugin shelling out to `cr`, gutter signs via `nvim-treesitter` siblings, telescope picker for comment list. Keep deferred until at least one regular Neovim user asks; the work is small but the support burden of a fourth editor is non-trivial.
+
+### 12.2 Non-functional improvements
+
+#### N1. Self-eval cleanliness
+
+Bound to F1 + F2 above but worth tracking separately as a CI gate. Add `make selfcheck` (already exists) to CI as a **non-blocking** check today, then promote to **blocking** once F1+F2 land. Adopt the rule: `cr` itself must produce zero warnings on its own `src/`. Deviating means either fixing the rule or annotating the source — never silently ignoring.
+
+This also puts the project in the position of being its own most demanding user, which is the cheapest way to keep the rules honest.
+
+#### N2. Performance — close the parallel-pipeline gap
+
+§8 measured single-thread at ~280k LOC/sec (target ≥250k — ✅ met) and 8-core parallel at ~550k LOC/sec (target ≥1.5M — ⚠ 36% of target). The diagnosis from §8: rayon task granularity, per-thread parser-init not amortised across runs, file batching.
+
+Concrete attack:
+
+1. **Parser-pool warm-up.** Allocate one parser per language per worker thread once at engine startup (`rayon::ThreadPoolBuilder::start_handler`), not lazily on first parse. Saves the ~200µs grammar-init per-thread cost on cold runs.
+2. **Batch small files.** Files under ~500 LOC parse so fast that rayon's work-stealing overhead dominates. Batch 8 such files per task before parallelism kicks in.
+3. **Profile.** `cargo flamegraph` on the bench corpus — no further optimisations until the flamegraph picks the next bottleneck. Conjectures don't beat profilers.
+
+Exit criterion: parallel ≥ 1.0M LOC/sec on the same fixture. Hitting 1.5M is the stretch goal; 1.0M closes the most-embarrassing gap and earns "ultra-fast" credibly enough.
+
+#### N3. CI bench-regression gate
+
+§8 specified "regression alerts in CI when any drops > 10%" and the criterion bench (`benches/throughput.rs`) is implemented, but no CI workflow runs it. Wire it:
+
+- Add a `bench` job to `.github/workflows/ci.yml` running on a stable runner (Ubuntu, single concurrency). Report current LOC/sec for each of the three configurations (parse-only, rules-only, full pipeline).
+- Persist results as an artifact; compare to the previous run on `main`. Fail with > 10% regression in any single metric.
+- Tolerance for noise on shared GitHub runners is wide; an alternative is a self-hosted runner. Start with Ubuntu-latest and a 15% tolerance; tighten if noise allows.
+
+This is also the gate behind which N2 progress is measurable — without N3, performance changes are pull-request anecdotes.
+
+#### N4. JSON schema testing
+
+§3 noted "stability commitment for JSON output. Worth committing to before the first non-MVP release." That release happened (we're at 2026.4.28). The commitment exists in `AGENTS.md` ("JSON schema is stable across patch releases within a CalVer minor"). What's missing is the *test* that enforces it.
+
+Add `tests/json_schema.rs`:
+
+- Snapshot the JSON output of `cr check` on a frozen fixture corpus.
+- Fail the build if the field names or types change without a corresponding bump.
+- Require a comment in the test pointing at the schema-version bump in `AGENTS.md` to update the snapshot.
+
+Same approach for the `casual-review/finding/1` and `casual-review/comment/1` schemas — snapshot test the JSON, refuse silent breakage.
+
+#### N5. Editor-extension marketplace publishing
+
+All three extensions build in CI; none are published to their respective marketplaces:
+
+- **VS Code Marketplace** + **OpenVSX** — needs a `vsce publish` step in the release workflow, gated on a `VSCE_PAT`/`OVSX_PAT` secret. Cost: ~4 hours including secret setup.
+- **JetBrains Marketplace** — `gradle publishPlugin` step + `JETBRAINS_HUB_TOKEN`. Cost: similar.
+- **Zed extensions registry** — PR to `zed-industries/extensions`. Manual once; subsequent updates are tag-driven on the casual-review side.
+
+Each is gated by tag-driven release in `release.yml`. Until publishing lands, users discover extensions via "build from source," which is a real adoption tax.
+
+#### N6. MSRV enforcement
+
+§1 said "pin to current stable minus one. Document it." `Cargo.toml` has `rust-version = "1.80"`. CI runs `dtolnay/rust-toolchain@stable` on every job — so MSRV is documented but not actually tested. Add an MSRV job pinned to `1.80` (or whatever the declared MSRV is) running `cargo build && cargo test`. When the declared MSRV bumps, the job updates with the same PR.
+
+#### N7. Test coverage hygiene
+
+Snapshot tests cover ~52 unit cases (one fixture per rule) plus integration tests for Phases 3 and 4. Two gaps:
+
+1. **Rule × language matrix.** Universal rules should have a snapshot fixture per language. `commented-code` has Rust + TS but not Python or Java. Catalogue the matrix; fill the holes.
+2. **`cr explain` regression.** Each rule's `explain()` text is part of the user contract. Add a snapshot test over the full output of `cr explain` (no rule arg) and one per rule for `cr explain <id>`. Catches accidental edits to the help copy.
+
+#### N8. Windows behaviour audit
+
+CI runs the test suite on Windows, but no one reviews the *output* on Windows. ariadne's Unicode rendering, line-ending handling in `trailing-whitespace`, and path display in JSON all benefit from a manual Windows pass. Land snapshot fixtures with `\r\n` line endings to lock the behaviour in.
+
+#### N9. Documentation: rule explain audit
+
+`cr explain <rule-id>` is the canonical rule documentation surface. Each rule's `explain()` should answer three questions: what it catches, why it matters, how to fix. Audit the 15 existing rules' explain text; rewrite any that bury one of the three. (Quick spot-check: `commented-code` answers all three; `parse-error` is terse — could explain why a parse error becomes a diagnostic at all.)
+
+#### N10. Release-notes story
+
+`make release` tags + builds. There's no `CHANGELOG.md` or auto-generated release notes. For a CalVer-versioned tool, "what changed in this release" is the only orientation a user gets between `2026.4.28` and `2026.5.3`. Adopt one of:
+
+- Hand-written `CHANGELOG.md` updated as part of `make release`.
+- Auto-generated notes via `git cliff` from conventional commit messages, regenerated each release.
+
+Lean toward `git cliff` if commit hygiene is good (current `git log` is mixed). Otherwise hand-written. Either way, this is a near-term blocker on growing the user base.
+
+### 12.3 Sequencing
+
+The functional and non-functional threads run in parallel, but there's a natural ordering within each:
+
+| Order | Functional | Non-functional |
+|---|---|---|
+| 1 | F1 — rule precision | N1 — self-eval gate |
+| 2 | F2 — `cr-allow` directives | N4 — JSON schema test |
+| 3 | F3 — `cr fix` (start with trivial rules) | N3 — CI bench gate |
+| 4 | F4 — `--format agent` | N2 — performance closure |
+| 5 | F9 — incremental new rules | N5 — marketplace publishing |
+| 6 | F8 — `unused-public` (cross-file spike) | N7, N8, N9, N10 — coverage / docs / Windows / changelog |
+| 7 | F5 — smart re-anchor (gated on metrics) | N6 — MSRV gate |
+| 8 | F7 — Go (or whichever language gets demand) | — |
+| 9 | F6 — forge bridge (gated on demand) | — |
+| 10 | F10 — Neovim (gated on demand) | — |
+
+Items 1–4 are the immediate priority. Items 5–10 ride on demand, profiling results, or completion of earlier work.
+
+### Next decisions for section 12
+
+- **Self-eval gate as blocking CI.** Recommend yes once F1 + F2 land; the project's credibility rests on its own diagnostics being signal.
+- **`cr-allow` syntax: `cr-allow:` vs `cr:allow`.** The colon-after form is closer to `clippy::allow` mental model; the no-colon form scans easier. Lean colon-after for consistency with `cr-fetch` etc.
+- **Bench gate tolerance.** 10% (the §8 figure) on shared runners is tight enough to false-positive often; 15% is permissive but reduces churn. Recommend 15% on Ubuntu-latest, tighten to 10% if a self-hosted runner becomes available.
+- **Whether `cr fix` writes only to changed files.** Yes by default (matches the rest of the diff-aware UX); `--all` extends the scope.
+
+---
+
 ## Phasing summary
 
-| Phase | Scope | Exit criteria |
-|---|---|---|
-| **Phase 1 — MVP** | Workspace, diagnostic types, ariadne renderer, two languages (Rust + Python), three rules, diff-aware default, JSON output, exit codes | `cr check` on a fixture matches snapshot, runs in <200 ms, CI integration via JSON |
-| **Phase 2 — CI-grade** | SARIF output, `--format github`, two more languages (TypeScript + Go), `casual-review.toml` config, benchmark suite, `--all` and `--changed-only` modes | Adopted in at least one real repo's CI; SARIF appears in GitHub code scanning UI |
-| **Phase 3 — Substrate** | `cr publish`/`show`/`fetch`/`push` against `refs/notes/casual-review`, JSON schema v1 frozen, threaded ack/dismiss, agent-format output if justified | Findings round-trip through clone+push+pull; one external user has consumed them |
-| **Phase 4 — Collaboration** | Ref split, `casual-review/comment/1` schema, `cr comment` subcommands, anchoring/staleness, VS Code extension, optional forge bridge | Two developers leave and reply to comments end-to-end from VS Code via the git remote |
-| **Phase 4 add-on — JetBrains plugin** | `extensions/jetbrains/`: project service, gutter highlighters, actions, status bar widget. Same JSON contract as the VS Code extension. | Builds via `./gradlew buildPlugin` (Kotlin 2.2 / Gradle 9 / IntelliJ Platform Gradle Plugin 2.6, IDE 2024.2 baseline). |
-| **Phase 5+** | WASM rules, LSP server, `cr fix`, additional languages on demand, Neovim extension | Driven by real demand, not by this plan |
+| Phase | Scope | Status | Exit criteria |
+|---|---|---|---|
+| **Phase 1 — MVP** | Single-crate layout, diagnostic types, ariadne renderer, two languages (Rust + Python), three rules, diff-aware default, JSON output, exit codes | ✅ shipped (overshot: 15 rules, 5 languages) | `cr check` on a fixture matches snapshot, runs in <200 ms, CI integration via JSON |
+| **Phase 2 — CI-grade** | SARIF output, `--format github`, more languages, `casual-review.toml` config, benchmark suite, `--all` mode | ✅ shipped (Go grammar still pending; CI bench-regression gate still pending) | Adopted in at least one real repo's CI; SARIF appears in GitHub code scanning UI |
+| **Phase 3 — Substrate** | `cr publish`/`show`/`fetch`/`push` against `refs/notes/casual-review`, JSON schema v1 frozen, threaded ack/dismiss | ✅ shipped | Findings round-trip through clone+push+pull |
+| **Phase 4 — Collaboration** | Ref split, `casual-review/comment/1` schema, `cr comment` subcommands, anchoring/staleness, VS Code + JetBrains + Zed extensions | ✅ shipped except 4.2 smart re-anchor and 4.4 forge bridge | Two developers leave and reply to comments end-to-end from an editor via the git remote |
+| **Phase 5 — Hardening & growth** | Rule precision, suppression UX, `cr fix`, performance, schema testing, more languages, smart re-anchor, forge bridge, agent format, marketplace publishing | ⏳ active — see §12 | Self-eval clean on own tree; bench targets met; one external repo using `cr` in CI; extensions on official marketplaces |
+| **Phase 6+ — Driven by demand** | WASM rules, external-process rules, LSP server, Neovim plugin, cross-file analysis | Not started | Driven by real demand, not by this plan |
 
 ---
 
 ## Immediate next steps
 
-1. Decide on ariadne vs codespan-reporting. (Recommend ariadne.)
-2. Decide on the initial post-MVP language set. (Recommend TypeScript + Go.)
-3. Initialize the workspace per section 1, with empty crate skeletons and a passing `cargo build`.
-4. Implement `cr-core` types end-to-end and snapshot-test the human renderer against three hand-written fixture diagnostics — *before* wiring tree-sitter or git2. The diagnostic engine is the project; everything else is an adapter.
-5. Wire `cr-git` for the working-tree diff case only. Defer staged/range until MVP runs end-to-end.
-6. Add `tree-sitter-rust` and the three MVP rules. Demo `cr check` on the casual-review repo itself.
+The MVP-bring-up checklist below is preserved as a record. For active work, see §12.
+
+1. ~~Decide on ariadne vs codespan-reporting.~~ Done — ariadne.
+2. ~~Decide on the initial post-MVP language set.~~ TypeScript + TSX + Java shipped; Go remains.
+3. ~~Initialize the workspace, single-crate layout.~~ Done.
+4. ~~Implement diagnostic types end-to-end and snapshot-test the human renderer.~~ Done.
+5. ~~Wire `cr-git` for the working-tree diff case.~~ Done; staged + repo-wide also shipped.
+6. ~~Add `tree-sitter-rust` and the MVP rules.~~ Done; 15 rules across 5 languages.
+
+The current top of the queue lives in §12. The single sharpest item: **fix `commented-code` false positives on doc comments** so `make selfcheck` is signal, not noise.

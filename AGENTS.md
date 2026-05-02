@@ -4,6 +4,11 @@ Guidance for AI agents using `casual-review` to find and resolve issues in a cod
 
 `cr` is a CLI that produces structured diagnostics. This document describes the workflow, output schema, and rule semantics an agent needs to use it effectively.
 
+1. Don’t assume. Don’t hide confusion. Surface tradeoffs.
+2. Minimum code that solves the problem. Nothing speculative.
+3. Touch only what you must. Clean up only your own mess.
+4. Define success criteria. Loop until verified.
+
 ## When to reach for cr
 
 - The user asks you to **review** code, a PR, or recent changes.
