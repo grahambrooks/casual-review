@@ -1,0 +1,38 @@
+PLAN.md
+  924f15642fe8fe7c 5-18,614-735,737-839,841-872,878-887
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "275e002509dd66f380da3b88927475a8ded2cab1",
+  "prompts": {
+    "924f15642fe8fe7c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "59b5e1b6-327d-4288-b52d-bf20732f7982",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 431,
+      "total_deletions": 15,
+      "accepted_lines": 431,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/d268fc2c8ea53328f7046b1959ba2270a156d6fdeb9b602a4902ea13ac71f776"
+    },
+    "ca9ff5093bcbbeb8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fd43cf6f-4aab-4e5f-9a29-0aed3ad1bb84",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Graham Brooks",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 0,
+      "accepted_lines": 2626,
+      "overriden_lines": 11,
+      "messages_url": "https://usegitai.com/cas/12e55d3c6cdd9e1149b8c430ca9d3df7237c3e3055040157a17ea451e3dbd0ec"
+    }
+  }
+}
