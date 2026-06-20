@@ -81,12 +81,16 @@ fn bench_parse_only(c: &mut Criterion) {
         let (source, loc) = replicate(sample, 10_000);
         let bytes = source.as_bytes();
         group.throughput(Throughput::Elements(loc as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(name), &(*lang, bytes), |b, (lang, bytes)| {
-            b.iter(|| {
-                let tree = parse::parse(*lang, bytes).expect("parse");
-                std::hint::black_box(tree);
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(name),
+            &(*lang, bytes),
+            |b, (lang, bytes)| {
+                b.iter(|| {
+                    let tree = parse::parse(*lang, bytes).expect("parse");
+                    std::hint::black_box(tree);
+                });
+            },
+        );
     }
     group.finish();
 }
@@ -133,13 +137,17 @@ fn bench_rules_per_rule(c: &mut Criterion) {
 
     for rule in &rules {
         let id = rule.id();
-        group.bench_with_input(BenchmarkId::from_parameter(id), &(rule.as_ref()), |b, rule| {
-            b.iter(|| {
-                let ctx = make_ctx(&path, &source, &tree);
-                let diagnostics = rule.run(&ctx);
-                std::hint::black_box(diagnostics);
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(id),
+            &(rule.as_ref()),
+            |b, rule| {
+                b.iter(|| {
+                    let ctx = make_ctx(&path, &source, &tree);
+                    let diagnostics = rule.run(&ctx);
+                    std::hint::black_box(diagnostics);
+                });
+            },
+        );
     }
     group.finish();
 }
