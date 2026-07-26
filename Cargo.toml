@@ -66,7 +66,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 insta = { version = "1", features = ["yaml"] }      # snapshot testing
 assert_cmd = "2"                                     # CLI integration tests
 tempfile = "3"                                       # tempdirs for tests
-criterion = { version = "0.5", features = ["html_reports"] }  # LOC/sec benchmarks
+criterion = { version = "0.8", features = ["html_reports"] }  # LOC/sec benchmarks
 
 [[bench]]
 name = "throughput"
