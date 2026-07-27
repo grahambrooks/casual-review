@@ -34,7 +34,7 @@ ariadne = "0.6"
 git2 = { version = "0.20", default-features = false }
 
 # tree-sitter core + per-language grammars
-tree-sitter = "0.22"
+tree-sitter = "0.26"
 tree-sitter-rust = "0.21"
 tree-sitter-python = "0.21"
 tree-sitter-typescript = "0.21"
