@@ -31,7 +31,7 @@ ariadne = "0.6"
 # Git plumbing (diff resolution, blob fetch).
 # 0.20+ required: 0.19's libgit2-sys 0.17 fails to link advapi32 on Windows
 # (missing CryptGenRandom, OpenProcessToken, Reg* symbols).
-git2 = { version = "0.20", default-features = false }
+git2 = { version = "0.21", default-features = false }
 
 # tree-sitter core + per-language grammars
 tree-sitter = "0.26"
