@@ -74,7 +74,7 @@ jobs:
           npx --yes @vscode/vsce@latest package \
             --no-dependencies \
             --out "casual-review-ci.vsix"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vscode-extension-${{ github.sha }}
           path: extensions/vscode/casual-review-ci.vsix
@@ -94,7 +94,7 @@ jobs:
       - name: gradlew buildPlugin
         working-directory: extensions/jetbrains
         run: ./gradlew --no-daemon buildPlugin
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: jetbrains-plugin-${{ github.sha }}
           path: extensions/jetbrains/build/distributions/*.zip
@@ -116,7 +116,7 @@ jobs:
       - name: cargo build --release --target wasm32-wasip1
         working-directory: extensions/zed
         run: cargo build --release --target wasm32-wasip1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: zed-extension-${{ github.sha }}
           path: extensions/zed/target/wasm32-wasip1/release/casual_review_zed.wasm
