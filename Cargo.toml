@@ -52,7 +52,7 @@ glob = "0.3"
 # Serialization (JSON output, snapshot tests, TOML config, git notes)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.9"
+toml = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Cross-machine-stable hashing for comment IDs and anchor staleness
