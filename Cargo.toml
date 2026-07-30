@@ -22,7 +22,7 @@ path = "src/lib.rs"
 [dependencies]
 # CLI + error handling
 anyhow = "1"
-thiserror = "1"
+thiserror = "2"
 clap = { version = "4", features = ["derive"] }
 
 # Diagnostic rendering
