@@ -2,7 +2,7 @@
 name = "casual-review"
 version = "2026.5.2"
 edition = "2021"
-rust-version = "1.97.1"
+rust-version = "1.98.0"
 description = "Ultra-fast code review CLI with rustc-quality diagnostics"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/grahambrooks/casual-review"
