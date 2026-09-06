@@ -76,6 +76,8 @@ extensions/vscode/src/extension.ts
   s_792fcf395dc43b::t_5185892648fd71 358-367,379,396
   s_792fcf395dc43b::t_af19b9e5aa308f 368,370-371
   s_792fcf395dc43b::t_fce93064cf5605 386,388-389
+src/comments.rs
+  s_1faf00b3ecdb1b::t_42fca31f0ffd23 91-103,123
 ---
 {
   "schema_version": "authorship/3.0.0",
@@ -88,6 +90,14 @@ extensions/vscode/src/extension.ts
     }
   },
   "sessions": {
+    "s_1faf00b3ecdb1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a47bf1c-e595-49ed-a115-e804597c9495",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Graham Brooks <graham@grahambrooks.com>"
+    },
     "s_792fcf395dc43b": {
       "agent_id": {
         "tool": "claude",
