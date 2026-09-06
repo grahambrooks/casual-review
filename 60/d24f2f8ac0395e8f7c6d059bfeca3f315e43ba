@@ -1,0 +1,116 @@
+tests/mcp.rs
+  s_8d20326ee7a73d::t_05998009ad110e 90-93,111-114,118-120,127-129,161-167
+  s_8d20326ee7a73d::t_06b49c8b2363ea 1-89,94-110,115-117,121-126,130-160,168
+extensions/vscode/README.md
+  s_792fcf395dc43b::t_2cb1ed5b8dc47d 39,45-57
+  s_792fcf395dc43b::t_9f53b91794dfe7 58
+extensions/zed/src/lib.rs
+  s_8d20326ee7a73d::t_9613191065befc 3-9,11-20,23,33-55,57
+Cargo.toml
+  s_8d20326ee7a73d::t_2e856400e8a01d 6,27,35,40-41
+AGENTS.md
+  s_8d20326ee7a73d::t_7f9c5fb63af71c 3,5,9-12,16-18,20,22,24-28,30,34-45,49,53-71,77-83,85,87-91,93,95,97-99,101,103,105,107-109,111,115-117,121-123,127
+  s_8d20326ee7a73d::t_a53afc3e197a97 7-8
+src/cli.rs
+  s_8d20326ee7a73d::t_af812a957d3ff6 25-26
+  s_8d20326ee7a73d::t_3c230187ab5fe5 171-173
+  s_8d20326ee7a73d::t_9d1c8e6e1e56f5 5-9,17-19,21,23-24,164-167
+  s_8d20326ee7a73d::t_b88240d782f6fd 168-170
+Formula/casual-review.rb
+  s_8d20326ee7a73d::t_c08069dcfa9941 2
+README.md
+  h_37b3b27dede911 5,7,10,19,21-23,27
+  s_c7b235764d1e20::t_72563c451900ae 9
+  s_8d20326ee7a73d::t_3b8a6ad6bb4a0a 98,100-112
+  s_8d20326ee7a73d::t_0a51713c2597d9 135,138,140
+  s_8d20326ee7a73d::t_335bf405a6fc99 25
+  s_8d20326ee7a73d::t_141ece7cffbe54 3,11,13,15,17,26,62,67-91,94-96,116,118,122-127,134,136-137,139,145-146,150,160-162
+  s_8d20326ee7a73d::t_c02e036f7a38c4 8,20,24
+extensions/zed/README.md
+  s_8d20326ee7a73d::t_9d2750aa68cc2e 3-4,6,8-12,14-40,52-55,57,59-62
+src/main.rs
+  s_8d20326ee7a73d::t_05998009ad110e 136-141,189-194
+  s_8d20326ee7a73d::t_5d741b591337d1 3,21-25,27-28,41,43,45-46,51,53,55,61,63,66
+  s_8d20326ee7a73d::t_3268723695438f 4-5,7-9,11,26,72-76,90-102,108-116,119-120,122-123,125-130,134-135,142-144,147-151,160,166,185-188,195
+src/lib.rs
+  s_8d20326ee7a73d::t_7a27817f1d6800 4,6
+extensions/vscode/package.json
+  s_792fcf395dc43b::t_c29956770e9936 53-73,75-91,101-111
+  s_792fcf395dc43b::t_a53033ec639c09 26-27,31-32
+  s_792fcf395dc43b::t_107d9d97c681ba 74
+  s_792fcf395dc43b::t_5899a42b1c39a2 112-124
+extensions/vscode/media/comments.svg
+  s_792fcf395dc43b::t_f2f390a437982a 1
+extensions/zed/extension.toml
+  s_8d20326ee7a73d::t_857717674e2b29 3-4,9
+extensions/jetbrains/README.md
+  s_792fcf395dc43b::t_92423db6e4834d 64-71
+CLAUDE.md
+  s_8d20326ee7a73d::t_9fbea90a5ad352 7,11,13-17,19,27,33,35-45,50-51
+  s_8d20326ee7a73d::t_598eb3d2484c2e 31
+scripts/render-formula.py
+  s_8d20326ee7a73d::t_c1a69c152a2919 17
+src/mcp.rs
+  s_8d20326ee7a73d::t_8be622e13a1132 1-13,15-99,104-230,234-332
+  s_8d20326ee7a73d::t_05998009ad110e 14,100-103,231-233
+extensions/jetbrains/src/main/kotlin/com/casualreview/CrToolWindow.kt
+  s_792fcf395dc43b::t_bd077a637c5c9e 136-142,147
+  s_792fcf395dc43b::t_d9cd5fec77a95f 17
+  s_8d20326ee7a73d::t_10acd944aa718c 296-298,300-301,304
+  s_8d20326ee7a73d::t_b839f2dcbb145d 462
+  s_792fcf395dc43b::t_914cefff880985 156-157,159,161,168-189,191-204
+  s_792fcf395dc43b::t_b7033c24fd00ab 85-87
+  s_792fcf395dc43b::t_94cb83a5fc0835 246-273
+  s_8d20326ee7a73d::t_1281e8173659cd 347
+  s_8d20326ee7a73d::t_ae3286e7d01a07 26,31-32,34-36,58-62,66-68,71,190,277-292,294-295,305,308-313,315-346,350-353,355-360,362-365,367,371-374,376-378,381-383,385-387,389-392,394-398,400-434,439,441,444-445,450-459,463,489-490,506-521
+  s_792fcf395dc43b::t_fc5eb94582c2d1 205
+src/review.rs
+  s_8d20326ee7a73d::t_a3f2a1042c9d1e 1-267,270-400,407-413,417-473,477-489
+  s_8d20326ee7a73d::t_05998009ad110e 268-269,401-406,414-416,474-476
+extensions/vscode/src/extension.ts
+  s_792fcf395dc43b::t_712244dd208beb 75-79,82,86,90
+  s_792fcf395dc43b::t_6d3f91e1af02c6 460-494,503-633
+  s_792fcf395dc43b::t_fa7bc6f149e290 495-502
+  s_792fcf395dc43b::t_6f9af555e49e3e 169
+  s_792fcf395dc43b::t_ab9055cd9e3558 44
+  s_792fcf395dc43b::t_5185892648fd71 358-367,379,396
+  s_792fcf395dc43b::t_af19b9e5aa308f 368,370-371
+  s_792fcf395dc43b::t_fce93064cf5605 386,388-389
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "60d24f2f8ac0395e8f7c6d059bfeca3f315e43ba",
+  "prompts": {},
+  "humans": {
+    "h_37b3b27dede911": {
+      "author": "Graham Brooks <graham@grahambrooks.com>"
+    }
+  },
+  "sessions": {
+    "s_792fcf395dc43b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88711205-e988-41cb-8169-0d19738a6a01",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Graham Brooks <graham@grahambrooks.com>"
+    },
+    "s_8d20326ee7a73d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58b3bf44-a1be-4d4f-9572-84f412c707cc",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Graham Brooks <graham@grahambrooks.com>"
+    },
+    "s_c7b235764d1e20": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1782587649073",
+        "model": "unknown"
+      },
+      "human_author": "Graham Brooks <graham@grahambrooks.com>"
+    }
+  }
+}
