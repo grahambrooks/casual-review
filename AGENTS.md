@@ -1,166 +1,127 @@
 # AGENTS.md
 
-Guidance for AI agents using `casual-review` to find and resolve issues in a codebase.
+Guidance for AI agents using `casual-review` to leave, read, and resolve code-review feedback that lives **inside the git repository**.
 
-`cr` is a CLI that produces structured diagnostics. This document describes the workflow, output schema, and rule semantics an agent needs to use it effectively.
+`cr` is a CLI that stores review comments and conversations as structured records on a git-notes ref (`refs/notes/casual-review/discuss`). An agent reviewer writes to the same store a human does, and a human can reply to an agent's comment (and vice versa). This document describes the workflow, the JSON schema, and the anchoring semantics an agent needs to use it effectively.
 
-1. Don’t assume. Don’t hide confusion. Surface tradeoffs.
-2. Minimum code that solves the problem. Nothing speculative.
-3. Touch only what you must. Clean up only your own mess.
-4. Define success criteria. Loop until verified.
+**If your host speaks MCP** (Zed's Agent, Claude, Cursor, …), register `cr mcp` as an MCP server and use the tools `list_comments` / `add_comment` / `reply_comment` / `resolve_comment` / `reanchor_comment` / `sync_comments` instead of shelling out — they map one-to-one to the CLI below and return the same `casual-review/comment/1` payloads. The rest of this document (workflow, schema, anchoring) applies identically.
+
+1. Don't assume. Don't hide confusion. Surface tradeoffs.
+2. Review the whole unit you were asked about — file, module, or commit — not only the diff.
+3. Anchor every comment precisely, and say why it matters and what to do.
+4. Leave the conversation in git; don't dump findings into chat and lose them.
 
 ## When to reach for cr
 
-- The user asks you to **review** code, a PR, or recent changes.
-- The user asks you to **fix issues** in a repo and you don't know where to start.
-- You're about to make changes and want to know whether existing code already has lint debt to avoid amplifying.
+- The user asks you to **review** a file, module, commit, or PR and have the feedback persist.
+- You're collaborating with humans (or other agents) who will read and act on review comments later, possibly in their editor via the extensions.
+- You want feedback to stay **associated with the code until addressed** — `cr` tracks staleness as the code drifts.
 
-`cr` is specifically diff-aware by default — it won't drown you in findings on unchanged code unless you ask it to.
+Unlike a PR review tool, `cr` is not limited to changed lines: comment on any line range, any whole file, or the commit as a whole.
 
-## The five-step workflow
+## The workflow
 
-1. **Run cr** in the most useful mode for the task (see below).
-2. **Parse the JSON output**, one diagnostic per line.
-3. **Prioritize by severity**: `error` first, then `warning`, then `note`.
-4. **Decide per finding**: fix, ack-and-move-on, or skip with explanation.
-5. **Re-run cr after changes** to verify your fixes didn't introduce new issues.
+1. **Read existing state** so you don't duplicate feedback: `cr comment list --format json` (add `--include-ancestors` to pull threads written on earlier commits).
+2. **Review the unit** the user pointed you at.
+3. **Leave anchored comments**: `cr comment add <file> --lines A:B -m "..."` (or `--file-level` / `--commit-level`).
+4. **Participate in threads**: `cr comment reply <id>` and `cr comment resolve <id>` when something is addressed.
+5. **Sync** if the user wants the team to see it: `cr push` (or `cr sync`).
 
-## Choosing the mode
+## Commands
 
 | Goal | Command |
 |---|---|
-| Review the current PR / working-tree changes | `cr check --format json` |
-| Review staged changes only | `cr check --staged --format json` |
-| Review code being added or changed (with full file context, not just diff) | `cr check --all --format json` |
-| First-pass evaluation of an unfamiliar codebase | `cr check --repo --verbose --format json` |
-| Lint a specific file you're about to edit | `cr check path/to/file.rs --format json` |
+| Read open threads on HEAD as JSON | `cr comment list --format json` |
+| Read threads, including ones inherited from ancestors | `cr comment list --include-ancestors --format json` |
+| Read threads on a specific commit | `cr comment list --commit <rev> --format json` |
+| Comment on a line range | `cr comment add <file> --lines A:B -m "..."` |
+| Comment on a whole file | `cr comment add <file> --file-level -m "..."` |
+| Comment on the commit as a whole | `cr comment add --commit-level -m "..."` |
+| Reply to a thread (inherits the parent's anchor) | `cr comment reply <id> -m "..."` |
+| Mark a thread resolved | `cr comment resolve <id> -m "..."` |
+| Move a stale comment to a new line range | `cr comment reanchor <id> --lines A:B` |
+| Pull / publish / sync comments with a remote | `cr fetch` / `cr push` / `cr sync` |
 
-The default mode (`cr check` with no flags) is the right starting point most of the time: it lints exactly what's in the working-tree diff against `HEAD`. Reach for `--repo` only when there's no useful diff (clean tree, brand-new file, exploring an unfamiliar repo).
+`add` and `reply` print the new comment ID to **stdout** (status text goes to stderr), so capture stdout to thread further. Always pass `-m` so you never trigger the interactive `$EDITOR` fallback — a missing body aborts.
 
 ## Reading the output
 
-Each line of `cr check --format json` is one JSON diagnostic with this shape:
+`cr comment list --format json` prints a single `casual-review/comment/1` payload:
 
 ```json
 {
-  "code": "cognitive-complexity",
-  "severity": "warning",
-  "message": "function `extract_ts` has cognitive complexity 33 (threshold: 15)",
-  "primary": {
-    "file": "src/rules/api_surface_change.rs",
-    "byte_range": {"start": 7056, "end": 7136},
-    "line_start": 204,
-    "col_start": 1,
-    "line_end": 205,
-    "col_end": 10
-  },
-  "labels": [],
-  "notes": ["score grows with nesting depth; flat code with the same number of branches scores much lower"],
-  "helps": ["extract helpers, return early, or invert conditions to reduce nesting"],
-  "suggestions": []
+  "schema": "casual-review/comment/1",
+  "tool": "casual-review",
+  "tool_version": "2026.5.2",
+  "commit": "9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c",
+  "comments": [
+    {
+      "id": "CRC-1a2b3c4d5e6f",
+      "author": { "name": "Reviewer Bot", "email": "bot@example.com" },
+      "created_at": "2026-06-27T14:03:55+00:00",
+      "anchor": {
+        "file": "src/auth.rs",
+        "line_range": [42, 44],
+        "byte_range": [1280, 1361],
+        "anchor_text_sha": "b1946ac92492d2347c6235b4d2611184…"
+      },
+      "body": "this branch never handles the expired-token case",
+      "resolved": false
+    }
+  ]
 }
 ```
 
 Field semantics:
 
-- **`code`** — stable rule id. Use this to look up rule semantics with `cr explain <code>`.
-- **`severity`** — `error` (exit 1), `warning` (exit 0 but worth fixing), `note`/`help` (informational).
-- **`message`** — one-line summary of what's wrong.
-- **`primary`** — where to point the fix. `line_start`/`col_start` are 1-based and editor-friendly.
-- **`labels`** — secondary spans with their own messages (e.g., a related location).
-- **`notes`** / **`helps`** — additional context. `helps` is usually the actionable hint.
-- **`suggestions`** — structured fix proposals (currently rare; will grow over time).
+- **`id`** — stable `CRC-<12 hex>` hash of author + timestamp + anchor + body. Use it as the target for `reply` / `resolve` / `reanchor`.
+- **`author`** — sourced from `git config user.{name,email}`. Set those before commenting or `add` errors (no anonymous comments).
+- **`anchor`** — where the comment points (see below). `file` absent ⇒ commit-level; `line_range` of `[0, 0]` with a `file` ⇒ file-level; otherwise a line/byte range.
+- **`anchor_text_sha`** — SHA-256 of the anchored bytes at creation time. If a fresh hash of the current code differs, the comment is **stale** (human output marks it `[stale]`).
+- **`parent`** — present on replies, resolutions, and re-anchors; it's the ID of the record they extend. Top-level comments omit it.
+- **`resolved`** — `true` only on the resolution record itself. A thread is resolved when any record carries `resolved: true` for its root; `cr comment list` hides resolved threads unless you pass `--include-resolved`.
+- **`origin_commit`** — only set by `--include-ancestors`, naming the commit a projected comment was originally written on. Never persisted.
 
-## Rule semantics
+## Anchoring semantics
 
-Run `cr explain` (no argument) to list all rules with one-line summaries.
-Run `cr explain <rule-id>` for the full documentation including what it catches, why it matters, and how to fix it.
+- **Line-level** (`--lines A:B`) is the default and most useful. Lines are 1-based and inclusive.
+- **File-level** (`--file-level`) attaches to the file as a whole — good for module-shape or organization feedback.
+- **Commit-level** (`--commit-level`) attaches to the commit with no file anchor — good for review summaries or cross-cutting notes.
+- **Staleness**: anchors store a content hash, not just coordinates. When code shifts, a comment goes stale rather than silently pointing at the wrong lines. If a stale comment is still relevant, `cr comment reanchor <id> --lines A:B` moves it; otherwise reply/resolve it.
+- **Append-only**: replies, resolutions, and re-anchors are new records linked by `parent`. Nothing is mutated or deleted, so the thread is fully auditable.
 
-The 15 rules grouped by character:
+## Decision rubric for leaving a comment
 
-**Universal high-signal** (almost always worth surfacing in a review):
-- `parse-error` — file doesn't parse (Error severity). Fix the syntax.
-- `cognitive-complexity` — function is hard to read. Score > 15 = candidate for splitting.
-- `empty-catch` — silent error swallowing. Real bugs hide here.
-- `assertion-free-test` — test that can't fail meaningfully. Add an assertion or delete.
-- `hardcoded-secret` — committed API key / token (Error severity). Rotate, then remove.
+For each issue you find, classify it:
 
-**Universal medium-signal** (review nudges):
-- `large-function` — body > 40 lines. Heuristic; watch for false positives in long match statements.
-- `debug-print` — `println!`/`console.log` etc. that probably shouldn't ship.
-- `disabled-test` — `#[ignore]`/`it.skip` etc. Why is it disabled?
-- `todo-marker` — TODO/FIXME/XXX. Should this be a tracked issue?
-- `trailing-whitespace` — cosmetic.
+1. **Comment it** — anchor a comment with a clear rationale and a concrete suggestion. Prefer line-level; fall back to file/commit-level when the concern is structural.
+2. **Reply, don't restate** — if a relevant thread already exists (check with `cr comment list` first), reply to it instead of opening a duplicate.
+3. **Resolve** — when you've confirmed something raised earlier is addressed, `resolve` it with a one-line note.
 
-**Language-specific**:
-- `unwrap-used` (Rust) — `.unwrap()`/`.expect()`. Test code is fine; production usually isn't.
-- `any-type` (TS/TSX) — explicit `any`. Use `unknown` or a real type.
-- `ts-escape-hatch` (TS/TSX) — `@ts-ignore`/`@ts-nocheck`/non-null `!`.
-- `bare-except` (Python) — `except:` without a type. Catches `KeyboardInterrupt` too.
+Default to **anchored and specific**. A comment that doesn't say what to change is noise.
 
-**Diff-aware** (only fires when there's a HEAD blob to compare against):
-- `api-surface-change` — public symbols added/removed in the diff. Note severity — heads-up for reviewers, not a problem.
+## Sync model
 
-## Decision rubric for fixes
+Comments live on `refs/notes/casual-review/discuss`. They are local until pushed.
 
-For each finding the agent retrieves, classify into one of:
+- `cr fetch [remote]` — pull the discuss ref (a missing remote ref is a no-op, not an error).
+- `cr push [remote]` — publish your comments.
+- `cr sync [remote]` — fetch then push. `remote` defaults to `origin`.
 
-1. **Fix it** — clearly correct, low-risk, fits the user's stated task.
-2. **Surface it** — explain to the user what fired and let them decide. Use this when the fix is invasive or the rule has a high false-positive rate in this context.
-3. **Skip it** — when the finding is in code the user didn't ask you to touch, or in code that's clearly out of scope (vendored, generated, fixtures).
-
-Default to **surface, not silently skip**. If you're unsure whether a finding matters, tell the user it fired and ask.
-
-## Common workflows
-
-**Workflow: "review my recent changes"**
-
-```sh
-cr check --format json | jq -c '.'
-```
-
-Walk the findings, group by severity, present to the user. For errors, propose fixes inline. For warnings, summarise and ask which to address.
-
-**Workflow: "fix all high-severity issues in this repo"**
-
-```sh
-cr check --repo --format json | jq -c 'select(.severity == "error")'
-```
-
-Iterate over errors. For each, read the file at the reported line, propose a fix, apply if low-risk.
-
-**Workflow: "should I add this code or refactor first?"**
-
-```sh
-cr check --repo path/to/area --format json | jq -c '.'
-```
-
-Look at existing complexity, unwrap-usage, etc. in the area. If the area is already noisy, refactoring before adding may be cheaper than amplifying the noise.
-
-## Performance and limits
-
-- Throughput: ~280k LOC/sec single-thread, ~550k LOC/sec on 8 cores. A 500k-LOC repo finishes in ~2 seconds.
-- Cold-startup: ~6ms (negligible).
-- Languages: Rust, Python, TypeScript, TSX, Java. Other files are silently skipped.
+Only push when the user wants the team to see the feedback; local review iterations don't need it.
 
 ## What cr deliberately doesn't do
 
-- **No fix application.** `cr` reports findings; an agent (or human) decides what to fix and how. A future `cr fix` is on the roadmap but isn't built.
-- **No config file (yet).** All rules fire with built-in thresholds. Per-rule disable / per-path suppression is the next operational priority — until then, file-list filtering (`cr check src/ tests/`) is the only suppression mechanism.
-- **No cross-file analysis.** Each file is parsed independently. Dead-code, unused-export, and import-graph analyses are out of scope for v1.
+- **No built-in lint rules.** `cr` stores review *judgment* (yours and humans'), not mechanical lint output. Run a linter separately; record what's worth a conversation as a comment.
+- **No history rewriting.** Edits are new append-only records, never mutations.
+- **No server.** The repo is the database; sync is plain `git fetch`/`push` of one notes ref.
 
 ## Stability commitments
 
-- **JSON schema (`--format json`)** is stable across patch releases within a CalVer minor (`YYYY.M.*`). Major or minor bumps may add fields; existing field names and types won't change without a version bump.
-- **Rule ids** are stable. New rules add new ids; rules don't get renamed.
-- **Exit codes** — `0` clean, `1` errors found, `2` tool failure (config error, can't read repo, etc.).
+- **JSON schema (`casual-review/comment/1`)** is stable across patch releases within a CalVer minor (`YYYY.M.*`). Minor/major bumps may add fields; existing field names and types won't change without a version bump.
+- **Comment IDs** are content-stable: the same author, timestamp, anchor, and body always hash to the same `CRC-…` id, on any machine.
+- **Exit codes** — `0` success, `2` tool failure (not a git repo, unknown commit, unset `user.name`/`user.email`, empty body, etc.).
 
 ## Reporting issues
 
-If a rule produces a false positive on code you believe is correct, the most useful bug report includes:
-
-1. The exact JSON diagnostic.
-2. A minimal reproducible code snippet.
-3. What you expected the rule to do.
-
-Open at <https://github.com/grahambrooks/casual-review/issues>.
+Open at <https://github.com/grahambrooks/casual-review/issues>. A useful report includes the exact `cr` command, the JSON payload involved, and what you expected.

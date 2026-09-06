@@ -61,6 +61,14 @@ menu (for `Add Comment`).
 
 The status bar shows `cr: <open> [⚠<stale>]`. Click it to refresh.
 
+## Comments tool window
+
+The **Casual Review** tool window shows comment threads as cards with inline
+reply boxes and a **Resolve** button. By default it tracks the active editor's
+file. Tick **All files** in the header to switch to a project-wide view: every
+open thread in the repository, grouped under a file heading and sorted by line.
+**Refresh** reloads and **Sync** runs fetch+push.
+
 ## Settings
 
 **Settings → Tools → Casual Review**

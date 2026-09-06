@@ -14,7 +14,7 @@ import sys
 
 TEMPLATE = """\
 class CasualReview < Formula
-  desc "Ultra-fast code review CLI with rustc-quality diagnostics"
+  desc "Store code-review comments and conversations inside your git repository"
   homepage "https://github.com/grahambrooks/casual-review"
   version "{version}"
   license "MIT OR Apache-2.0"

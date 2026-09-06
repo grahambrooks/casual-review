@@ -41,21 +41,6 @@ check: ## Fast type-check without producing binaries
 test: ## Run all tests
 	$(CARGO) test
 
-.PHONY: bench
-bench: ## Run criterion benchmarks (LOC/sec) and theme the HTML reports
-	$(CARGO) bench --bench throughput
-	@$(MAKE) --no-print-directory bench-theme
-
-.PHONY: bench-theme
-bench-theme: ## Inject prefers-color-scheme dark-mode CSS into criterion's HTML reports (idempotent)
-	@python3 scripts/theme-bench-reports.py
-
-.PHONY: bench-open
-bench-open: ## Open the criterion report dashboard in the default browser
-	@open target/criterion/report/index.html 2>/dev/null \
-		|| xdg-open target/criterion/report/index.html 2>/dev/null \
-		|| echo "open target/criterion/report/index.html in your browser"
-
 .PHONY: clean
 clean: ## Remove build artifacts
 	$(CARGO) clean
@@ -78,18 +63,6 @@ clippy: ## Run clippy with -D warnings
 
 .PHONY: lint
 lint: fmt-check clippy ## fmt-check + clippy
-
-# ---------------------------------------------------------------------------
-# Snapshot tests
-# ---------------------------------------------------------------------------
-
-.PHONY: snapshots-review
-snapshots-review: ## Interactively review pending insta snapshots
-	$(CARGO) insta review
-
-.PHONY: snapshots-accept
-snapshots-accept: ## Accept all pending insta snapshots (use with care)
-	$(CARGO) insta accept
 
 # ---------------------------------------------------------------------------
 # Editor extensions
@@ -176,18 +149,6 @@ ext-zed-run: ## Print Zed dev-extension install instructions; open Zed at EXT_RU
 	else \
 		echo "(zed CLI not on PATH; open Zed manually after installing.)"; \
 	fi
-
-# ---------------------------------------------------------------------------
-# Self-evaluation
-# ---------------------------------------------------------------------------
-
-.PHONY: selfcheck
-selfcheck: dist ## Run cr against the project's own src/ tree
-	-./$(BIN) check --repo src --verbose
-
-.PHONY: eval
-eval: dist ## Run cr against the fixtures/ corpus (ignores exit code — fixtures intentionally trigger error-severity rules)
-	-./$(BIN) check --repo fixtures --verbose
 
 # ---------------------------------------------------------------------------
 # Install

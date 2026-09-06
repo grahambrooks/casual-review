@@ -23,11 +23,13 @@
       },
       {
         "command": "casualReview.replyToComment",
-        "title": "Casual Review: Reply to Comment"
+        "title": "Casual Review: Reply to Comment",
+        "icon": "$(reply)"
       },
       {
         "command": "casualReview.resolveComment",
-        "title": "Casual Review: Resolve Comment"
+        "title": "Casual Review: Resolve Comment",
+        "icon": "$(check)"
       },
       {
         "command": "casualReview.sync",
@@ -48,6 +50,45 @@
       {
         "command": "casualReview.showStale",
         "title": "Casual Review: Show Stale Comments"
+      },
+      {
+        "command": "casualReview.openComment",
+        "title": "Casual Review: Open Comment"
+      },
+      {
+        "command": "casualReview.refreshTree",
+        "title": "Casual Review: Refresh Comments",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "casualReview.syncTree",
+        "title": "Casual Review: Sync (fetch + push)",
+        "icon": "$(sync)"
+      }
+    ],
+    "viewsContainers": {
+      "activityBar": [
+        {
+          "id": "casualReview",
+          "title": "Casual Review",
+          "icon": "media/comments.svg"
+        }
+      ]
+    },
+    "views": {
+      "casualReview": [
+        {
+          "id": "casualReview.comments",
+          "name": "Review Comments",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Casual Review"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "casualReview.comments",
+        "contents": "No open review comments in this repository.\nUse [Add Comment on Selection](command:casualReview.addComment) from the editor, then [Refresh](command:casualReview.refresh)."
       }
     ],
     "menus": {
@@ -56,6 +97,30 @@
           "command": "casualReview.addComment",
           "group": "casualReview@1",
           "when": "editorTextFocus"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "casualReview.refreshTree",
+          "when": "view == casualReview.comments",
+          "group": "navigation@1"
+        },
+        {
+          "command": "casualReview.syncTree",
+          "when": "view == casualReview.comments",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "casualReview.replyToComment",
+          "when": "view == casualReview.comments && viewItem == casualReview.thread",
+          "group": "inline@1"
+        },
+        {
+          "command": "casualReview.resolveComment",
+          "when": "view == casualReview.comments && viewItem == casualReview.thread",
+          "group": "inline@2"
         }
       ]
     },

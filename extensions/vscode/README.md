@@ -36,10 +36,25 @@ To run the extension under a development host of VS Code:
 | `Casual Review: Fetch` / `Casual Review: Push` | Each half of the sync. |
 | `Casual Review: Refresh Comments` | Re-runs `cr comment list` and re-applies decorations. |
 | `Casual Review: Show Stale Comments` | Lists all comments whose anchor bytes have drifted in the working tree. |
+| `Casual Review: Open Comment` | Jumps to a comment's anchored line (used by the comments view). |
 
 The extension automatically refreshes when the active editor changes or after
 any mutating command. There is no daemon and no LSP — every action is one
 `cr` invocation.
+
+## Comments view
+
+The **Casual Review** icon in the activity bar opens a **Review Comments** tree
+listing every open thread in the repository, grouped by file and sorted by line.
+Stale threads are flagged with a warning icon. Each entry:
+
+- **Click** → opens the file at the anchored line.
+- **Expand** → shows replies inline.
+- **Inline buttons** → reply to or resolve the thread.
+
+Use the title-bar **Refresh** and **Sync** buttons to reload or fetch+push. The
+view stays in sync with the gutter decorations — both read the same
+`cr comment list` payload.
 
 ## Settings
 

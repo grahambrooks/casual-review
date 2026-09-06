@@ -1,24 +1,43 @@
 # Casual Review — Zed Extension
 
-Slash commands for the [casual-review](../..) CLI inside Zed's Assistant
-panel.
+Exposes [casual-review](../..)'s git-stored review comments to Zed's **Agent**
+through an MCP server.
 
-## Why slash commands and not gutter decorations?
+## How it works
 
-Zed extensions run in a WASM sandbox without arbitrary subprocess access.
-The extension cannot spawn `cr` directly the way the VS Code or JetBrains
-extensions do, so it cannot draw live gutter markers or open inline reply
-boxes — those features require running `cr comment list` and reacting to
-its JSON output.
+Zed removed extension-provided slash commands along with text threads
+([zed#53760](https://github.com/zed-industries/zed/issues/53760)). The modern
+integration path is the **Model Context Protocol**: this extension registers an
+MCP server that Zed's Agent connects to. The server is `cr mcp` — the same `cr`
+binary in stdio MCP mode — which exposes the review operations as tools:
 
-What this extension *can* do is help you (and Zed's AI assistant) compose
-correct `cr` invocations. The Assistant pairs especially well with this
-pattern: ask "review this function" and have it propose
-`cr comment add ...` calls you can paste into a terminal.
+| Tool | Purpose |
+|---|---|
+| `list_comments` | Read open threads on a commit (JSON payload). |
+| `add_comment` | Anchor a comment to lines, a file, or the commit. |
+| `reply_comment` | Reply to a thread, inheriting its anchor. |
+| `resolve_comment` | Mark a thread resolved (append-only). |
+| `reanchor_comment` | Move a stale comment to a new line range. |
+| `sync_comments` | `fetch` / `push` / `sync` comments with a remote. |
 
-For full editor integration, install the matching client:
-- VS Code → `extensions/vscode/`
-- JetBrains → `extensions/jetbrains/`
+So you can ask Zed's Agent to "review this function and leave comments," or
+"show open review threads on this file and resolve the ones I've addressed,"
+and it drives `cr` directly — no copy-pasting shell commands.
+
+## Requirements
+
+`cr` must be installed and resolvable when Zed launches the server. By default
+the extension runs `cr` from `PATH`. If `cr` lives elsewhere (e.g. Zed was
+launched from Finder without your shell `PATH`), override the command in your
+Zed `settings.json`:
+
+```jsonc
+"context_servers": {
+  "casual-review": {
+    "command": { "path": "/absolute/path/to/cr", "args": ["mcp"] }
+  }
+}
+```
 
 ## Build
 
@@ -28,35 +47,16 @@ cd extensions/zed
 cargo build --release --target wasm32-wasip1
 ```
 
-The compiled extension is `target/wasm32-wasip1/release/casual_review_zed.wasm`.
-
 ## Install (dev mode)
 
-In Zed: **zed → Extensions → Install Dev Extension** and pick
-`extensions/zed/`. Zed compiles the extension itself; you do not need to
-run `cargo build` first when using the dev-install path.
+In Zed: **Extensions → Install Dev Extension** and pick `extensions/zed/`. Zed
+compiles the extension itself. Then open the **Agent** panel — the
+`casual-review` tools become available to the Agent. Confirm it's connected
+under **Settings → Context Servers**.
 
-## Slash commands
+## Other editors
 
-| Command | Purpose |
-|---|---|
-| `/cr-help` | Print the `cr comment` command reference. |
-| `/cr-list` | Render `cr comment list --include-ancestors`. |
-| `/cr-add <file>:<lines> <body…>` | Compose `cr comment add ... -m '<body>'`. Argument forms: `path/to/file.rs:42` or `path/to/file.rs:42:44`. |
-| `/cr-reply <id> <body…>` | Compose `cr comment reply <id> -m '<body>'`. |
-| `/cr-resolve <id> [<message…>]` | Compose `cr comment resolve <id>` (with optional `-m`). |
-| `/cr-sync` | Render `cr fetch origin` + `cr push origin`. |
-| `/cr-status` | Read `.cr-comments/*.json` if `cr` is in file-fallback mode. |
+For inline gutter decorations and reply boxes, use the editor-native clients:
 
-Each command's output is markdown — copy the fenced shell block into a
-terminal to run it. Bodies with spaces or special characters are
-single-quoted with `'\''` escapes for POSIX shells.
-
-## Roadmap
-
-A future version may declare a `cr-mcp` MCP **context server** in
-`extension.toml`. Zed launches context servers as separate processes
-outside the WASM sandbox, so an MCP server *could* shell out to `cr` and
-expose comments to Zed's Assistant as live context. That requires
-shipping a `cr-mcp` binary, which is tracked separately from this
-extension.
+- VS Code → `extensions/vscode/`
+- JetBrains → `extensions/jetbrains/`

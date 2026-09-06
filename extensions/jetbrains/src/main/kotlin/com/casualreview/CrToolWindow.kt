@@ -1,6 +1,5 @@
 package com.casualreview
 
-import com.casualreview.actions.replyToComment
 import com.casualreview.actions.resolveCommentById
 import com.casualreview.actions.submitReply
 import com.intellij.openapi.Disposable
@@ -15,6 +14,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
@@ -23,11 +23,17 @@ import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
+import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.io.File
+import java.time.Duration
+import java.time.Instant
+import java.time.OffsetDateTime
 import javax.swing.BorderFactory
 import javax.swing.Box
 import javax.swing.BoxLayout
@@ -49,15 +55,20 @@ class CrToolWindowFactory : ToolWindowFactory {
 
 /**
  * Tool window showing comments anchored to the active editor's file. Each
- * thread is a card with the root comment, indented replies, and an inline
- * reply box. Updates live on `FileEditorManagerListener.selectionChanged`
- * and on the `CrEvents.TOPIC` message-bus topic.
+ * thread is a compact card: a root comment, a threaded run of replies behind a
+ * left rule, and a reply box that stays collapsed until you ask for it. Cards
+ * are height-clamped so they hug their content instead of stretching to fill
+ * the panel. Updates live on `FileEditorManagerListener.selectionChanged` and
+ * on the `CrEvents.TOPIC` message-bus topic.
  */
 class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
+    /** Reply chains longer than this collapse behind a "show N replies" link. */
+    private val collapseRepliesOver = 3
+
     private val list = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
-        border = JBUI.Borders.empty(8)
+        border = JBUI.Borders.empty(6)
     }
     private val scrollPane = JBScrollPane(list).apply {
         verticalScrollBar.unitIncrement = 16
@@ -70,6 +81,9 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
     ).apply {
         foreground = JBColor.GRAY
     }
+
+    /** When true, show every thread in the project grouped by file. */
+    private var showAllFiles: Boolean = false
 
     init {
         add(buildHeader(), BorderLayout.NORTH)
@@ -119,32 +133,75 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
                 }
             }
         }
+        val allFiles = JBCheckBox("All files", showAllFiles).apply {
+            toolTipText = "Show every thread in the project, grouped by file"
+            addActionListener {
+                showAllFiles = isSelected
+                rerender()
+            }
+        }
         header.add(title)
         header.add(Box.createHorizontalStrut(8))
         header.add(refresh)
         header.add(sync)
+        header.add(allFiles)
         return header
     }
 
     private fun rerender() {
         ApplicationManager.getApplication().invokeLater {
             list.removeAll()
-            val file = activeFileRel()
             val payload = CrService.get(project).currentPayload()
-            val visible = visibleThreads(payload, file)
 
-            if (file == null) {
-                list.add(centeredLabel("Open a file to view its comments."))
-            } else if (visible.isEmpty()) {
-                list.add(emptyLabel)
+            if (showAllFiles) {
+                renderAllFiles(payload)
             } else {
-                for (thread in visible) list.add(buildThreadCard(thread))
+                renderActiveFile(payload)
             }
+
             list.add(Box.createVerticalGlue())
             list.revalidate()
             list.repaint()
         }
     }
+
+    private fun renderActiveFile(payload: CommentsPayload?) {
+        val file = activeFileRel()
+        val visible = visibleThreads(payload, file)
+        if (file == null) {
+            list.add(centeredLabel("Open a file to view its comments."))
+        } else if (visible.isEmpty()) {
+            list.add(emptyLabel)
+        } else {
+            for (thread in visible) list.add(buildThreadCard(thread))
+        }
+    }
+
+    private fun renderAllFiles(payload: CommentsPayload?) {
+        val threads = allVisibleThreads(payload)
+        if (threads.isEmpty()) {
+            list.add(centeredLabel("No open comments in this project."))
+            return
+        }
+        var currentFile: String? = null
+        for (thread in threads) {
+            val file = thread.root.anchor.file ?: "<commit>"
+            if (file != currentFile) {
+                if (currentFile != null) list.add(Box.createVerticalStrut(6))
+                list.add(fileHeader(file))
+                currentFile = file
+            }
+            list.add(buildThreadCard(thread))
+        }
+    }
+
+    private fun fileHeader(file: String): JComponent =
+        JBLabel(file).apply {
+            font = JBFont.label().asBold()
+            foreground = JBColor.GRAY
+            alignmentX = Component.LEFT_ALIGNMENT
+            border = JBUI.Borders.empty(4, 2)
+        }
 
     private fun centeredLabel(text: String): JComponent =
         JBLabel(text, SwingConstants.CENTER).apply { foreground = JBColor.GRAY }
@@ -186,109 +243,57 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
             .sortedBy { it.root.anchor.lineRange.firstOrNull() ?: 0 }
     }
 
+    /** Every open, file-anchored thread in the project, grouped-friendly: sorted by file then line. */
+    private fun allVisibleThreads(payload: CommentsPayload?): List<Thread> {
+        if (payload == null) return emptyList()
+        val staleIds = CrService.get(project).staleIdsSnapshot()
+        val byParent = payload.comments
+            .filter { it.parent != null }
+            .groupBy { it.parent!! }
+        val resolvedRoots = payload.comments
+            .filter { it.resolved && it.parent != null }
+            .mapNotNull { it.parent }
+            .toSet()
+
+        return payload.comments
+            .filter { it.parent == null }
+            .filter { it.id !in resolvedRoots }
+            .filter { it.anchor.file != null }
+            .map { root ->
+                val replies = byParent[root.id]?.sortedBy { it.createdAt } ?: emptyList()
+                Thread(root, replies, root.id in staleIds)
+            }
+            .sortedWith(
+                compareBy(
+                    { it.root.anchor.file?.replace('\\', '/')?.trim('/') ?: "" },
+                    { it.root.anchor.lineRange.firstOrNull() ?: 0 },
+                ),
+            )
+    }
+
     private fun pathsEqual(a: String, b: String): Boolean =
         a.replace('\\', '/').trim('/') == b.replace('\\', '/').trim('/')
 
+    /**
+     * A vertical container whose maximum height equals its preferred height, so
+     * it never stretches under a Y-axis BoxLayout. This is what keeps cards
+     * hugging their content instead of splitting the panel's free space.
+     */
+    private class ContentBox : JPanel() {
+        init {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            alignmentX = Component.LEFT_ALIGNMENT
+        }
+
+        override fun getMaximumSize(): Dimension =
+            Dimension(Int.MAX_VALUE, preferredSize.height)
+    }
+
     private fun buildThreadCard(thread: Thread): JComponent {
-        val card = JPanel(BorderLayout()).apply {
-            border = BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 1, 1, 1, JBColor.border()),
-                JBUI.Borders.empty(8),
-            )
-            background = JBColor.background()
-            alignmentX = Component.LEFT_ALIGNMENT
-            maximumSize = Dimension(Int.MAX_VALUE, Int.MAX_VALUE)
-        }
+        val body = ContentBox()
 
-        val body = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            isOpaque = false
-        }
-        body.add(buildCommentBlock(thread.root, isReply = false, threadStale = thread.stale))
-        for (reply in thread.replies) {
-            body.add(Box.createVerticalStrut(6))
-            body.add(buildCommentBlock(reply, isReply = true, threadStale = false))
-        }
-        body.add(Box.createVerticalStrut(8))
-        body.add(buildReplyComposer(thread.root))
-
-        card.add(body, BorderLayout.CENTER)
-
-        val wrapper = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            isOpaque = false
-            alignmentX = Component.LEFT_ALIGNMENT
-            add(card)
-            add(Box.createVerticalStrut(8))
-        }
-        return wrapper
-    }
-
-    private fun buildCommentBlock(
-        comment: Comment,
-        isReply: Boolean,
-        threadStale: Boolean,
-    ): JComponent {
-        val outer = JPanel(BorderLayout()).apply {
-            isOpaque = false
-            border = if (isReply) JBUI.Borders.emptyLeft(16) else JBUI.Borders.empty()
-        }
-
-        val header = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply { isOpaque = false }
-        val nameLabel = JLabel(comment.author.name.ifBlank { "<unknown>" }).apply {
-            font = JBFont.label().asBold()
-        }
-        header.add(nameLabel)
-
-        val anchor = comment.anchor.file?.let {
-            val (a, b) = comment.anchor.lineRange.let {
-                if (it.size >= 2) it[0] to it[1] else 0 to 0
-            }
-            if (a > 0) "$it:$a-$b" else it
-        } ?: "<commit>"
-        header.add(JLabel("· $anchor").apply { foreground = JBColor.GRAY })
-
-        if (!isReply) {
-            if (threadStale) header.add(taggedLabel("stale", JBColor.RED))
-            comment.originCommit?.let {
-                header.add(taggedLabel("from ${it.take(8)}", JBColor.GRAY))
-            }
-        }
-
-        val resolveBtn = if (!isReply) {
-            JButton("Resolve").apply {
-                margin = JBUI.insets(0, 6)
-                addActionListener { resolveCommentById(project, comment.id) }
-            }
-        } else null
-
-        val headerRow = JPanel(BorderLayout()).apply { isOpaque = false }
-        headerRow.add(header, BorderLayout.WEST)
-        if (resolveBtn != null) headerRow.add(resolveBtn, BorderLayout.EAST)
-
-        val bodyArea = JBTextArea(comment.body).apply {
-            isEditable = false
-            lineWrap = true
-            wrapStyleWord = true
-            isOpaque = false
-            border = JBUI.Borders.emptyTop(4)
-            font = JBFont.label()
-        }
-
-        outer.add(headerRow, BorderLayout.NORTH)
-        outer.add(bodyArea, BorderLayout.CENTER)
-        return outer
-    }
-
-    private fun taggedLabel(text: String, color: Color): JComponent {
-        return JLabel("[$text]").apply {
-            foreground = color
-            font = JBFont.small()
-        }
-    }
-
-    private fun buildReplyComposer(root: Comment): JComponent {
-        val text = JBTextArea(2, 0).apply {
+        val composerText = JBTextArea(2, 0).apply {
             lineWrap = true
             wrapStyleWord = true
             border = BorderFactory.createCompoundBorder(
@@ -296,10 +301,166 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
                 JBUI.Borders.empty(4),
             )
         }
-
-        val send = JButton("Send").apply {
-            margin = JBUI.insets(0, 8)
+        val composer = buildReplyComposer(thread.root, composerText).apply { isVisible = false }
+        val repliesBox = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+            alignmentX = Component.LEFT_ALIGNMENT
         }
+
+        fun relayout() {
+            list.revalidate()
+            list.repaint()
+        }
+
+        fun renderReplies(expanded: Boolean) {
+            repliesBox.removeAll()
+            if (thread.replies.isNotEmpty()) {
+                repliesBox.add(Box.createVerticalStrut(6))
+                if (!expanded) {
+                    val n = thread.replies.size
+                    repliesBox.add(
+                        linkLabel("▸ show $n ${if (n == 1) "reply" else "replies"}") {
+                            renderReplies(true); relayout()
+                        },
+                    )
+                } else {
+                    if (thread.replies.size > collapseRepliesOver) {
+                        repliesBox.add(
+                            linkLabel("▾ hide replies") { renderReplies(false); relayout() },
+                        )
+                        repliesBox.add(Box.createVerticalStrut(4))
+                    }
+                    thread.replies.forEachIndexed { i, reply ->
+                        if (i > 0) repliesBox.add(Box.createVerticalStrut(4))
+                        repliesBox.add(buildReplyBlock(reply))
+                    }
+                }
+            }
+            repliesBox.revalidate()
+            repliesBox.repaint()
+        }
+
+        val rootBlock = buildRootBlock(thread) {
+            composer.isVisible = !composer.isVisible
+            relayout()
+            if (composer.isVisible) composerText.requestFocusInWindow()
+        }
+
+        body.add(rootBlock)
+        body.add(repliesBox)
+        body.add(composer)
+        renderReplies(thread.replies.size <= collapseRepliesOver)
+
+        val card = JPanel(BorderLayout()).apply {
+            border = BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 1, 1, 1, JBColor.border()),
+                JBUI.Borders.empty(6, 8),
+            )
+            background = JBColor.background()
+            alignmentX = Component.LEFT_ALIGNMENT
+            add(body, BorderLayout.CENTER)
+        }
+
+        return ContentBox().apply {
+            add(card)
+            add(Box.createVerticalStrut(6))
+        }
+    }
+
+    /** Root comment: meta line with Reply/Resolve actions, then the wrapped body. */
+    private fun buildRootBlock(thread: Thread, onReplyToggle: () -> Unit): JComponent {
+        val comment = thread.root
+        val outer = JPanel(BorderLayout()).apply { isOpaque = false }
+
+        val meta = metaRow(comment).apply {
+            if (thread.stale) add(taggedLabel("stale", JBColor.RED))
+            comment.originCommit?.let { add(taggedLabel("from ${it.take(8)}", JBColor.GRAY)) }
+        }
+
+        val actions = JPanel(FlowLayout(FlowLayout.RIGHT, 8, 0)).apply { isOpaque = false }
+        actions.add(linkLabel("Reply") { onReplyToggle() })
+        actions.add(linkLabel("Resolve") { resolveCommentById(project, comment.id) })
+
+        val headerRow = JPanel(BorderLayout()).apply { isOpaque = false }
+        headerRow.add(meta, BorderLayout.WEST)
+        headerRow.add(actions, BorderLayout.EAST)
+
+        outer.add(headerRow, BorderLayout.NORTH)
+        outer.add(bodyArea(comment.body), BorderLayout.CENTER)
+        return outer
+    }
+
+    /** Reply comment: indented behind a left thread rule, compact meta, body. */
+    private fun buildReplyBlock(comment: Comment): JComponent {
+        val inner = JPanel(BorderLayout()).apply { isOpaque = false }
+        inner.add(metaRow(comment), BorderLayout.NORTH)
+        inner.add(bodyArea(comment.body), BorderLayout.CENTER)
+
+        return JPanel(BorderLayout()).apply {
+            isOpaque = false
+            alignmentX = Component.LEFT_ALIGNMENT
+            border = BorderFactory.createCompoundBorder(
+                JBUI.Borders.emptyLeft(2),
+                BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 2, 0, 0, JBColor.border()),
+                    JBUI.Borders.emptyLeft(8),
+                ),
+            )
+            add(inner, BorderLayout.CENTER)
+        }
+    }
+
+    /** `Author · file:line · 3h` on a single tight row. */
+    private fun metaRow(comment: Comment): JPanel {
+        val row = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply { isOpaque = false }
+        row.add(
+            JLabel(comment.author.name.ifBlank { "<unknown>" }).apply { font = JBFont.label().asBold() },
+        )
+        val anchor = comment.anchor.file?.let { file ->
+            val range = comment.anchor.lineRange
+            val a = range.getOrNull(0) ?: 0
+            val b = range.getOrNull(1) ?: 0
+            if (a > 0) "$file:$a-$b" else file
+        } ?: "<commit>"
+        row.add(JLabel("· $anchor").apply { foreground = JBColor.GRAY; font = JBFont.small() })
+        relativeTime(comment.createdAt).takeIf { it.isNotEmpty() }?.let {
+            row.add(JLabel("· $it").apply { foreground = JBColor.GRAY; font = JBFont.small() })
+        }
+        return row
+    }
+
+    private fun bodyArea(text: String): JComponent =
+        JBTextArea(text).apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
+            isOpaque = false
+            border = JBUI.Borders.emptyTop(3)
+            font = JBFont.label()
+            alignmentX = Component.LEFT_ALIGNMENT
+        }
+
+    private fun taggedLabel(text: String, color: Color): JComponent =
+        JLabel("[$text]").apply {
+            foreground = color
+            font = JBFont.small()
+        }
+
+    /** A clickable, link-styled label that sits flush-left in a BoxLayout. */
+    private fun linkLabel(text: String, onClick: () -> Unit): JLabel =
+        JLabel(text).apply {
+            foreground = JBColor.namedColor("Link.activeForeground", JBColor(0x589DF6, 0x548AF7))
+            font = JBFont.small()
+            alignmentX = Component.LEFT_ALIGNMENT
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) = onClick()
+            })
+        }
+
+    private fun buildReplyComposer(root: Comment, text: JBTextArea): JComponent {
+        val send = JButton("Send").apply { margin = JBUI.insets(0, 8) }
 
         val submit = {
             val body = text.text.trim()
@@ -325,7 +486,8 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
 
         val composer = JPanel(BorderLayout(6, 4)).apply {
             isOpaque = false
-            border = JBUI.Borders.emptyTop(4)
+            alignmentX = Component.LEFT_ALIGNMENT
+            border = JBUI.Borders.emptyTop(6)
         }
         composer.add(text, BorderLayout.CENTER)
 
@@ -341,9 +503,22 @@ class CrCommentsPanel(private val project: Project) : JPanel(BorderLayout()), Di
         return composer
     }
 
-    @Suppress("unused")
-    private fun openInDialog(commentId: String, authorHint: String) {
-        replyToComment(project, commentId, authorHint)
+    /** Compact age like `just now`, `5m`, `3h`, `2d`, or a date for older items. */
+    private fun relativeTime(iso: String): String {
+        if (iso.isBlank()) return ""
+        return try {
+            val then = OffsetDateTime.parse(iso)
+            val secs = Duration.between(then.toInstant(), Instant.now()).seconds
+            when {
+                secs < 60 -> "just now"
+                secs < 3600 -> "${secs / 60}m"
+                secs < 86_400 -> "${secs / 3600}h"
+                secs < 604_800 -> "${secs / 86_400}d"
+                else -> then.toLocalDate().toString()
+            }
+        } catch (_: Exception) {
+            ""
+        }
     }
 
     override fun dispose() {

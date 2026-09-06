@@ -88,7 +88,19 @@ impl CommentsPayload {
 pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
-    format!("{:x}", h.finalize())
+    hex_lower(&h.finalize())
+}
+
+/// Lowercase hex encoding of a digest. Written by hand because `sha2` 0.11's
+/// digest type no longer implements `LowerHex`.
+fn hex_lower(bytes: &[u8]) -> String {
+    use std::fmt::Write;
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
+            let _ = write!(s, "{b:02x}");
+            s
+        })
 }
 
 /// Stable comment ID: `CRC-<first-12-hex-chars-of-sha256>` over the fields
@@ -108,7 +120,7 @@ pub fn comment_id(author: &Author, created_at: &str, anchor: &Anchor, body: &str
     h.update(format!("{}-{}", anchor.byte_range.0, anchor.byte_range.1).as_bytes());
     h.update(b"\0");
     h.update(body.as_bytes());
-    let hex = format!("{:x}", h.finalize());
+    let hex = hex_lower(&h.finalize());
     format!("CRC-{}", &hex[..12])
 }
 
