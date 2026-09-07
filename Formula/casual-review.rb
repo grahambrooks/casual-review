@@ -6,8 +6,8 @@ class CasualReview < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/grahambrooks/casual-review/archive/refs/tags/v2026.8.1.tar.gz"
-      sha256 "6cfa63f71c1d5524e4a06e3039638ca3e4f64748c6373fb197817554f2dcfc19"
+      url "https://github.com/grahambrooks/casual-review/archive/refs/tags/v2026.9.1.tar.gz"
+      sha256 "6c40c931048798ce42927a59398038174feae80888235df74bdf4b698606dd8b"
     end
     on_intel do
       odie "Intel Mac binaries are not provided. Run `cargo install --git https://github.com/grahambrooks/casual-review --locked` to build from source."
