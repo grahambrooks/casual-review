@@ -1,0 +1,27 @@
+.github/workflows/ci.yml
+  s_c7db583e01ac64::t_ee20ff2abe6c87 25,35,45,56-57,59,88-89,93,108
+.github/workflows/release-extras.yml
+  s_c7db583e01ac64::t_5972a2883e5a95 29,32,34,113,116,120,177
+extensions/vscode/package-lock.json
+  s_c7db583e01ac64::t_a357d42ac9d890 12,14,21-23,27,37-376,378-380,384,387-409,413-415
+extensions/vscode/package.json
+  s_c7db583e01ac64::t_4a146846bc2b62 154,156
+extensions/vscode/tsconfig.json
+  s_c7db583e01ac64::t_b8c32244c5a554 11-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0eb2cd52a4f7b3ae61583e01540ac0875682b542",
+  "prompts": {},
+  "sessions": {
+    "s_c7db583e01ac64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a64f563f-ca61-4776-97cf-501db44bb230",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Graham Brooks <graham@grahambrooks.com>"
+    }
+  }
+}
