@@ -177,9 +177,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-wasip1
+      # The repo-root rust-toolchain.toml applies here too, so a stable install
+      # with the target is ignored; add the wasm target to the pinned toolchain.
+      - name: install pinned toolchain + wasm32-wasip1
+        working-directory: extensions/zed
+        run: |
+          rustup toolchain install
+          rustup target add wasm32-wasip1
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: extensions/zed
