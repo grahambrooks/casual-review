@@ -1,8 +1,8 @@
 [package]
 name = "casual-review"
 version = "2026.11.1"
-edition = "2021"
-rust-version = "1.99.0"
+edition = "2024"
+rust-version = "1.99.1"
 description = "Store code-review comments and conversations inside your git repository"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/grahambrooks/casual-review"

@@ -3,7 +3,7 @@
 //! Drives the server end-to-end the way an MCP host would: write
 //! newline-delimited JSON-RPC to stdin, close it, and parse the responses.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};

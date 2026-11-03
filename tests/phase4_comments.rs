@@ -1,6 +1,6 @@
 /// Phase 4 integration tests: user-authored comments on `casual-review/discuss`.
 use casual_review::comments::{
-    author_from_git, comment_id, sha256_hex, Anchor, Author, Comment, CommentsPayload,
+    Anchor, Author, Comment, CommentsPayload, author_from_git, comment_id, sha256_hex,
 };
 use casual_review::git_comments;
 use std::path::{Path, PathBuf};
@@ -147,10 +147,11 @@ fn resolve_marks_thread_resolved() -> anyhow::Result<()> {
     git_comments::write_comments(tmp.path(), &sha, &payload)?;
 
     let read = git_comments::read_comments(tmp.path(), &sha)?.expect("payload");
-    assert!(read
-        .comments
-        .iter()
-        .any(|c| c.resolved && c.parent.as_deref() == Some(&root.id)));
+    assert!(
+        read.comments
+            .iter()
+            .any(|c| c.resolved && c.parent.as_deref() == Some(&root.id))
+    );
     // Append-only: original record unmodified
     assert!(read.comments.iter().any(|c| c.id == root.id && !c.resolved));
     Ok(())

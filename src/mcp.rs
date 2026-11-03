@@ -12,7 +12,7 @@
 
 use crate::git_comments;
 use crate::review::{self, AddInput, ListInput};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
@@ -113,7 +113,7 @@ fn call_tool(repo: &Path, params: &Value) -> Outcome {
             return Outcome::Error {
                 code: -32602,
                 message: format!("unknown tool: {other}"),
-            }
+            };
         }
     };
 

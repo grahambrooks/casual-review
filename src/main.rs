@@ -200,10 +200,10 @@ fn anchor_label(anchor: &Anchor) -> String {
 /// with `#`, and return the trimmed result. Errors on empty body so we never
 /// store empty comments.
 fn read_body_or_editor(body: Option<&str>, kind: &str) -> anyhow::Result<String> {
-    if let Some(b) = body {
-        if !b.trim().is_empty() {
-            return Ok(b.to_string());
-        }
+    if let Some(b) = body
+        && !b.trim().is_empty()
+    {
+        return Ok(b.to_string());
     }
 
     let editor = std::env::var("EDITOR")

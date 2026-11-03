@@ -4,7 +4,7 @@
 //! these functions. They take a repo path and structured inputs and return
 //! the created/visible `Comment` records — no printing, no process exit codes.
 
-use crate::comments::{author_from_git, comment_id, sha256_hex, Anchor, Comment, CommentsPayload};
+use crate::comments::{Anchor, Comment, CommentsPayload, author_from_git, comment_id, sha256_hex};
 use crate::git_comments;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -211,10 +211,10 @@ pub fn list(repo: &Path, input: ListInput) -> anyhow::Result<CommentsPayload> {
         .comments
         .iter()
         .filter(|c| {
-            if let Some(file_filter) = &input.file {
-                if c.anchor.file.as_deref() != Some(file_filter.as_path()) {
-                    return false;
-                }
+            if let Some(file_filter) = &input.file
+                && c.anchor.file.as_deref() != Some(file_filter.as_path())
+            {
+                return false;
             }
             if !input.include_resolved {
                 let root = c.parent.clone().unwrap_or_else(|| c.id.clone());
