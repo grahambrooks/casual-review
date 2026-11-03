@@ -23,7 +23,7 @@ Always pass `-m` to avoid the interactive `$EDITOR` fallback. `add`/`reply` prin
 Conventions and operations:
 
 - **Build / test**: `make build`, `make test`. Or `cargo build` / `cargo test` directly.
-- **Lint**: `make lint` (= `fmt-check` + `clippy -D warnings`). CI enforces both.
+- **Gate**: `make check` (= `fmt-check` + `lint` (clippy `-D warnings`) + `test`), the same commands as the CI check job. `make hooks` runs it before every push.
 - **Run the extensions**: `make ext-run` lists the per-editor dev targets (they shell out to `cr`, so install it first).
 
 ## Architecture in one paragraph
@@ -42,7 +42,7 @@ Single binary crate. `src/comments.rs` holds the on-disk schema — `Comment`, `
 1. Edit `src/comments.rs`. Keep the schema string (`casual-review/comment/1`) and bump it only on a breaking change.
 2. Preserve serde back-compat: new fields need `#[serde(default)]`; fields not meant to persist need `skip_serializing_if`.
 3. Add/extend tests in `tests/phase4_comments.rs` (storage, threading, IDs) and `tests/phase4_anchoring.rs` (line↔byte ranges, staleness, ancestor projection).
-4. `make lint && make test` before committing.
+4. `make check` before committing.
 
 ## Things to know
 

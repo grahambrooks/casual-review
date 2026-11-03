@@ -147,24 +147,20 @@ src/main.rs          CLI command handlers (thin wrappers over review.rs)
 
 ## Releases
 
-Releases are tag-driven. Pushing a tag matching `v*.*.*` (e.g., `v2026.5.0`) triggers `.github/workflows/release.yml`, which:
-
-1. Verifies the tag matches `Cargo.toml`'s version.
-2. Builds release binaries for `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, `aarch64-apple-darwin`, and `x86_64-pc-windows-msvc`.
-3. Uploads each archive (with sha256 sidecar) to the GitHub Release.
-4. Updates `Formula/casual-review.rb` with the new version + per-platform SHA256s and commits the change back to `main`.
+Releases are tag-driven and use CalVer (`vYYYY.M.D`). Pushing a tag matching `v*.*.*` triggers `.github/workflows/release.yml`, which stamps the version from the tag, builds release binaries for Linux, macOS and Windows, uploads each archive (with sha256 sidecar) to the GitHub Release, and merges a pull request that bumps `Cargo.toml` and `Formula/casual-review.rb`. The editor extensions are packaged by `release-extras.yml`.
 
 To cut a release:
 
 ```sh
-make release                  # tag today's CalVer (YYYY.M.D)
-make release VERSION=2026.5.3 # or bump to an explicit version, then tag
-git push origin main --follow-tags
+make release-dry  # show the tag `make release` would push
+make release      # tag origin/main with today's CalVer and push the tag
 ```
+
+Nothing is bumped or committed locally; the release workflow does that.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request: `cargo build`/`test` on Linux, macOS, and Windows; `cargo fmt --check`; `cargo clippy -D warnings`.
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: `cargo fmt --check`, `cargo clippy -D warnings` and the tests on Linux (the same commands as `make check`), plus build/test on macOS and Windows, an MSRV check and `cargo audit`. `make hooks` installs git hooks (via [prek](https://prek.j178.dev)) that run fast checks on commit and `make check` before push.
 
 ## License
 

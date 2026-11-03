@@ -34,12 +34,11 @@ $(BIN): $(shell find src -name '*.rs') Cargo.toml
 	$(CARGO) build --release
 
 .PHONY: check
-check: ## Fast type-check without producing binaries
-	$(CARGO) check --all-targets
+check: fmt-check lint test ## The pre-push gate: the same commands as the CI check job
 
 .PHONY: test
-test: ## Run all tests
-	$(CARGO) test
+test: ## Run all tests (the CI test line)
+	$(CARGO) test --workspace --all-features --locked
 
 .PHONY: clean
 clean: ## Remove build artifacts
@@ -55,14 +54,18 @@ fmt: ## Format the codebase
 
 .PHONY: fmt-check
 fmt-check: ## Check formatting without writing changes
-	$(CARGO) fmt --all -- --check
-
-.PHONY: clippy
-clippy: ## Run clippy with -D warnings
-	$(CARGO) clippy --all-targets -- -D warnings
+	$(CARGO) fmt --all --check
 
 .PHONY: lint
-lint: fmt-check clippy ## fmt-check + clippy
+lint: ## Run clippy with -D warnings (the CI clippy line)
+	$(CARGO) clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+.PHONY: clippy
+clippy: lint ## Alias for lint
+
+.PHONY: hooks
+hooks: ## Install the git hooks (prek: pre-commit and pre-push)
+	prek install
 
 # ---------------------------------------------------------------------------
 # Editor extensions
@@ -166,77 +169,5 @@ install: ## cargo install --path . (drops `cr` in ~/.cargo/bin)
 version: ## Print the current Cargo.toml version
 	@echo $(CURRENT)
 
-# Verify pre-release state: working tree clean, tests pass, lint clean.
-.PHONY: verify-release
-verify-release: lint test ## Pre-release verification (lint + test)
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "error: working tree is dirty"; \
-		git status -s; \
-		exit 1; \
-	fi
-
-# Release flows:
-#
-#   make release                       — auto-compute today's YYYY.M.D, bump
-#                                        Cargo.toml if needed, commit, and tag.
-#                                        If Cargo.toml already matches today,
-#                                        tag-only (no bump commit).
-#
-#   make release VERSION=2026.5.3      — explicit version, bump+tag.
-#
-# Both gate on a clean working tree, an unused tag, and passing lint + test.
-# Neither pushes — the next-step push command is printed.
-.PHONY: release
-release: ## Tag today's CalVer (YYYY.M.D), or bump+tag with VERSION=...
-	@set -e; \
-	target_version="$(VERSION)"; \
-	if [ -z "$$target_version" ]; then \
-		target_version=$$(python3 -c "import datetime; t=datetime.date.today(); print(f'{t.year}.{t.month}.{t.day}')"); \
-		echo "==> auto-computed version from today's date: $$target_version"; \
-	fi; \
-	if ! echo "$$target_version" | grep -qE '^[0-9]{4}\.[0-9]+\.[0-9]+$$'; then \
-		echo "error: VERSION must match YYYY.M.D (got: $$target_version)"; \
-		exit 1; \
-	fi; \
-	if [ -n "$$(git status --porcelain)" ]; then \
-		echo "error: working tree is dirty; commit or stash first"; \
-		git status -s; \
-		exit 1; \
-	fi; \
-	if git rev-parse --verify --quiet "v$$target_version" >/dev/null; then \
-		echo "error: tag v$$target_version already exists"; \
-		echo "       same-day re-release? bump to tomorrow's date or pass VERSION=... explicitly"; \
-		exit 1; \
-	fi; \
-	if [ "$$target_version" = "$(CURRENT)" ]; then \
-		mode="tag-only"; \
-	else \
-		mode="bump-and-tag"; \
-	fi; \
-	echo "==> mode: $$mode (target: v$$target_version)"; \
-	echo "==> pre-flight: lint + test"; \
-	$(MAKE) --no-print-directory lint; \
-	$(MAKE) --no-print-directory test; \
-	if [ "$$mode" = "bump-and-tag" ]; then \
-		echo "==> bumping Cargo.toml: $(CURRENT) -> $$target_version"; \
-		python3 -c "import re; \
-			c = open('Cargo.toml').read(); \
-			c = re.sub(r'^version = \"[^\"]+\"', 'version = \"'\"$$target_version\"'\"', c, count=1, flags=re.M); \
-			open('Cargo.toml','w').write(c)"; \
-		echo "==> verifying bumped build"; \
-		$(CARGO) build --release --quiet; \
-		$(CARGO) test --quiet; \
-		echo "==> committing"; \
-		git add Cargo.toml; \
-		git commit -m "Release v$$target_version"; \
-	fi; \
-	echo "==> tagging v$$target_version"; \
-	git tag -a "v$$target_version" -m "Release v$$target_version"; \
-	echo; \
-	echo "Tagged v$$target_version locally. Push to trigger the release workflow:"; \
-	echo "    git push origin main --follow-tags"; \
-	echo; \
-	echo "After push, the release workflow will:"; \
-	echo "    - build binaries for 5 platforms"; \
-	echo "    - upload to GitHub Releases"; \
-	echo "    - update Formula/casual-review.rb on main"
+# `make release`, `release-dry`, `release-version`: tag-only CalVer releases.
+include release.mk
