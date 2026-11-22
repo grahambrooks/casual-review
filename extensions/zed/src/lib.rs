@@ -20,7 +20,7 @@
 //! ```
 
 use zed_extension_api::{
-    self as zed, settings::ContextServerSettings, Command, ContextServerId, Project, Result,
+    self as zed, Command, ContextServerId, Project, Result, settings::ContextServerSettings,
 };
 
 struct CasualReview;
@@ -37,9 +37,10 @@ impl zed::Extension for CasualReview {
     ) -> Result<Command> {
         // Honour a user-provided command override from Zed settings; otherwise
         // run `cr mcp` from PATH.
-        let override_command = ContextServerSettings::for_project(context_server_id.as_ref(), project)
-            .ok()
-            .and_then(|settings| settings.command);
+        let override_command =
+            ContextServerSettings::for_project(context_server_id.as_ref(), project)
+                .ok()
+                .and_then(|settings| settings.command);
 
         let program = override_command
             .as_ref()
